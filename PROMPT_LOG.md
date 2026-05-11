@@ -165,3 +165,27 @@ Passare a M1/T06 `data_dragon.py` e `fetch_versions()`.
 - Nessuna libreria Python mancante da scaricare.
 - Checklist creata e aggiornata.
 - Residui manuali: aggiungere Python al PATH se desiderato, configurare `.env`, installare LoL solo se si vuole live mode su pc its.
+
+## PLOG-2026-05-11-004 - Chiarimento errata su `httpx` vs Vanilla JS
+
+- Data: 2026-05-11
+- Scope: chiarire se `httpx` sia stato sostituito dall'ERRATA-002.
+
+### Messaggi catalogati
+
+- USER-004: segnala che la spec errata ha valenza maggiore della spec v2.3 e chiede se `httpx` sia stato sostituito da Vanilla JS, oppure se sta interpretando male.
+- CODEX-019: verifica `SPEC_ERRATA.md` locale, `LiveDraftCompanion_SPEC_ERRATA.md` originale e `LiveDraftCompanion_TechnicalSpec_v2.3.md`.
+
+### Verifica
+
+- ERRATA-002 riguarda la riga UI/Frontend: `HTML + CSS (Tailwind via CDN) + Vanilla JS + fetch`.
+- ERRATA-002 chiude la decisione frontend e scarta HTMX dal MVP.
+- La spec v2.3 mantiene `httpx` come client HTTP backend per LCU, Data Dragon e OpenRouter.
+- Nessuna voce errata sostituisce `httpx`.
+
+### Decisione
+
+- La precedenza dell'errata e confermata.
+- Interpretazione corretta: Vanilla JS + `fetch` sostituisce HTMX/Jinja server-rendered come scelta frontend, non `httpx`.
+- `httpx` resta in `requirements.txt`.
+- README e checklist pc its sono stati aggiornati per indicare esplicitamente `httpx` come backend-only.

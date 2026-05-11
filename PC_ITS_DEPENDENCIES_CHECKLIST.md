@@ -39,7 +39,7 @@ Tutte le dipendenze sotto sono installate nella virtualenv `C:\LiveDraftCompanio
 | `fastapi` | Backend API locale | Installato | Verifica import | `0.136.1` | OK |
 | `uvicorn[standard]` | ASGI server | Installato | Verifica `python -m uvicorn --version` | `0.46.0` | OK |
 | `jinja2` | Template HTML | Installato | Verifica import | `3.1.6` | OK |
-| `httpx` | HTTP client LCU/Data Dragon/OpenRouter | Installato | Verifica import | `0.28.1` | OK |
+| `httpx` | HTTP client backend per LCU/Data Dragon/OpenRouter | Installato | Verifica import | `0.28.1` | OK |
 | `pydantic` | Modelli e validazione | Installato | Verifica import | `2.13.4` | OK |
 | `pydantic-settings` | Config `.env` | Installato | Verifica import | `2.14.1` | OK |
 | `sqlalchemy` | SQLite ORM | Installato | Verifica import | `2.0.49` | OK |
@@ -97,6 +97,7 @@ Tutte le dipendenze sotto sono installate nella virtualenv `C:\LiveDraftCompanio
 
 - Su pc its usare sempre `.\.venv\Scripts\python.exe` invece di `python`, finche Python non viene aggiunto al PATH.
 - Le entrypoint `.exe` in `.venv\Scripts` possono dare falsi negativi in ambienti sandbox; le verifiche robuste passano da `python -m`.
+- `httpx` resta una dipendenza backend Python. L'ERRATA-002 sostituisce HTMX con Vanilla JS + `fetch` nel frontend, non sostituisce `httpx`.
 - Per sviluppo e demo su pc its, partire in modalita simulazione:
 
 ```env

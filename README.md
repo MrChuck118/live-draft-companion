@@ -18,7 +18,7 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 ## Funzionalita MVP
 
 - App Windows distribuita come `.exe` con backend FastAPI locale e UI browser su `localhost`.
-- Lettura del client League of Legends via LCU API con lockfile e `httpx`.
+- Lettura del client League of Legends via LCU API con lockfile e `httpx` lato backend.
 - Modalita simulazione tramite `FileProvider`, basata su draft state JSON.
 - Data Dragon cache locale per campioni, oggetti e rune.
 - Prompt AI con vincoli rigidi: spiegazioni in italiano, nomi champion/item/rune in inglese, output JSON validato.
@@ -32,7 +32,8 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 - Python 3.12.10
 - FastAPI + uvicorn
 - HTML/CSS/JavaScript con Tailwind via CDN
-- httpx async
+- httpx async lato backend per LCU, Data Dragon e OpenRouter
+- Vanilla JS + fetch lato frontend per chiamare le API locali
 - Pydantic v2 + pydantic-settings
 - SQLite + SQLAlchemy + aiosqlite
 - OpenRouter tramite SDK OpenAI-compatible
