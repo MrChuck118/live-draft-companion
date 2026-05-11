@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+jinja2
+httpx
+pydantic
+pydantic-settings
+sqlalchemy
+aiosqlite
+openai
+python-dotenv
+sse-starlette
+pyinstaller
+pytest
+pytest-asyncio
+psutil>=5.9.8,<8
