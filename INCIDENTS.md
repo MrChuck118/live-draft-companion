@@ -107,3 +107,30 @@ La procedura standard della spec (`python -m venv .venv`) non funziona letteralm
 - Creata `.venv` usando il percorso assoluto di Python 3.12.10.
 - Le verifiche successive usano `.\.venv\Scripts\python.exe`.
 - Da considerare per README/setup finale: indicare fallback con percorso assoluto o chiedere all'utente di aggiungere Python al PATH.
+
+## INC-005 - Output `pip show` rumoroso per encoding console CP1252
+
+- Data rilevazione: 2026-05-11
+- Fase: audit dipendenze pc its
+- Severita: bassa
+- Stato: mitigato
+
+### Descrizione
+
+Durante `pip show` su piu pacchetti, la console Windows in encoding CP1252 ha generato `UnicodeEncodeError` su metadati autore contenenti caratteri non ASCII.
+
+### Impatto
+
+Nessun impatto sull'installazione o sugli import. `pip check`, `pip list`, `pip install -r requirements.txt` e gli import Python hanno funzionato correttamente.
+
+### Mitigazione
+
+Per le verifiche operative usare:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip list --format=freeze
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -c "import ..."
+```
+
+Evitare `pip show` multipacchetto come fonte primaria in questa console.

@@ -127,3 +127,41 @@ Passare a M1/T06 `data_dragon.py` e `fetch_versions()`.
 
 - Commit setup M0: `96bd181` (`T01-T05: initialize project setup`).
 - Push su `origin/main`: riuscito, remoto aggiornato da `0ca1767` a `96bd181`.
+
+## PLOG-2026-05-11-003 - Audit dipendenze pc its
+
+- Data: 2026-05-11
+- Scope: controllare librerie e dipendenze necessarie su questo PC, chiamato `pc its`, installare/scaricare cio che manca e aggiornare una checklist Markdown.
+- Output prodotto: `PC_ITS_DEPENDENCIES_CHECKLIST.md`.
+
+### Messaggi catalogati
+
+- USER-003: chiede di controllare tutte le librerie e dipendenze necessarie su questo PC, chiamarlo `pc its`, creare una checklist in Markdown, scaricare le dipendenze mancanti installabili e aggiornare la checklist.
+- CODEX-015: comunica che fara audit reale, checklist, installazione delle mancanze gestibili e aggiornamento finale.
+- CODEX-016: comunica che Git, `.venv`, `pip check` e pacchetti Python principali risultano OK, ma `python` e `py` non sono nel PATH.
+- CODEX-017: comunica che gli import Python sono OK e che le CLI saranno verificate con `python -m`.
+- CODEX-018: comunica che crea la checklist `pc its` e distingue tra dipendenze installabili e azioni manuali.
+
+### Verifiche eseguite
+
+- `git status --short`: working tree inizialmente pulito.
+- `git --version`: `2.53.0.windows.3`.
+- `where.exe python py`: nessun interprete nel PATH.
+- `.\.venv\Scripts\python.exe --version`: `Python 3.12.10`.
+- `.\.venv\Scripts\python.exe -m pip --version`: `pip 25.0.1`.
+- `.\.venv\Scripts\python.exe -m pip check`: nessun requisito rotto.
+- Import diretti: `fastapi`, `uvicorn`, `jinja2`, `httpx`, `pydantic`, `pydantic_settings`, `sqlalchemy`, `aiosqlite`, `openai`, `dotenv`, `sse_starlette`, `PyInstaller`, `pytest`, `pytest_asyncio`, `psutil`: OK.
+- CLI via `python -m`: PyInstaller `6.20.0`, pytest `9.0.3`, uvicorn `0.46.0`.
+- `pip install -r requirements.txt`: tutte le dipendenze gia soddisfatte.
+- Data Dragon versions endpoint: HTTP 200.
+- OpenRouter models endpoint: HTTP 200.
+- Tailwind CDN: HTTP 200 dopo redirect.
+- Browser: Edge e Chrome presenti; Firefox assente.
+- LoL client/lockfile: non rilevati nei path standard `C:\Riot Games` ed `E:\Riot Games`.
+- `.env`: assente; richiede configurazione manuale con API key reale.
+
+### Esito
+
+- Nessuna libreria Python mancante da scaricare.
+- Checklist creata e aggiornata.
+- Residui manuali: aggiungere Python al PATH se desiderato, configurare `.env`, installare LoL solo se si vuole live mode su pc its.
