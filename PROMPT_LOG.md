@@ -204,3 +204,54 @@ Passare a M1/T06 `data_dragon.py` e `fetch_versions()`.
 
 - `requirements.txt` resta nel repo per rendere replicabile il setup su pc its, PC di casa o PC Academy.
 - Le dipendenze elencate sono backend/tooling Python, non librerie frontend.
+
+## PLOG-2026-05-11-006 - Perche `httpx` resta in `requirements.txt`
+
+- Data: 2026-05-11
+- Scope: chiarire perche `httpx` compare tra le dipendenze Python.
+
+### Messaggi catalogati
+
+- USER-006: chiarisce che la domanda era allusiva: voleva sapere perche `httpx` fosse nella lista `requirements.txt`.
+- CODEX-021: ribadisce che `httpx` serve al backend, non al frontend.
+
+### Verifica
+
+- Spec v2.3: `httpx` e indicato per LCU API diretta, Data Dragon/OpenRouter HTTP client e setup replicabile.
+- ERRATA-002: sostituisce HTMX con Vanilla JS + `fetch` solo nel frontend.
+- Breakdown T06-T12: Data Dragon richiede chiamate HTTP dal backend.
+- Breakdown T36-T37: LCU provider richiede chiamate HTTP backend con `verify=False`.
+
+### Decisione
+
+- `httpx` resta in `requirements.txt`.
+- Motivazione: backend Python deve chiamare Data Dragon, LCU locale e, se necessario, servizi HTTP esterni. Vanilla JS + `fetch` vale solo per il browser che chiama le API FastAPI locali.
+
+## PLOG-2026-05-11-007 - Handoff prima cambio PC
+
+- Data: 2026-05-11
+- Scope: verificare commit/push, controllare coerenza delle operazioni fatte finora, creare un file Markdown sul Desktop con lo stato del breakdown.
+
+### Messaggi catalogati
+
+- USER-007: comunica che deve andare a casa e continuera su un altro PC; chiede di controllare commit/push, validare le operazioni fatte finora e creare un file Markdown sul Desktop fuori dal progetto con il punto del breakdown.
+- CODEX-022: verifica stato Git locale/remoto, controlli ambiente, file tracciati e coerenza con spec/errata/breakdown.
+
+### Verifiche eseguite
+
+- `git fetch origin main`: riuscito.
+- `HEAD` e `origin/main` iniziali allineati a `25019434a6dcb8217f9cba05d152aef34f1a2587`, con solo `PROMPT_LOG.md` modificato localmente dal chiarimento precedente.
+- `pip check`: nessun requisito rotto.
+- Import core: `fastapi`, `openai`, `sqlalchemy`, `httpx`, `psutil`: OK.
+- Ignorati correttamente: `.env`, `.venv`, `logs/test.log`, `data_dragon.db`, `build/test.txt`, `dist/test.txt`, `app.spec`.
+- File documentali presenti: `README.md`, `PROMPT_LOG.md`, `INCIDENTS.md`, `SPEC_ERRATA.md`, `PC_ITS_DEPENDENCIES_CHECKLIST.md`, `requirements.txt`, `.env.example`.
+- Struttura M0 presente e tracciata tramite `.gitkeep`: `app/`, `static/`, `templates/`, `prompts/`, `tests/mock_drafts/`, `logs/`, `scripts/`.
+- `requirements.txt`: confermati `fastapi`, `uvicorn[standard]`, `httpx`, `psutil>=5.9.8,<8`.
+
+### Esito
+
+- Operazioni fin qui coerenti con breakdown v2.1, spec v2.3 ed errata.
+- M0 e T03/T03b risultano chiusi, con ERRATA-004 documentata.
+- Nessun codice applicativo iniziato.
+- Prossimo task: M1/T06, `app/data_dragon.py` con `fetch_versions()`.
+- File handoff Desktop richiesto: `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`.
