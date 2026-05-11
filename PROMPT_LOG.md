@@ -189,3 +189,18 @@ Passare a M1/T06 `data_dragon.py` e `fetch_versions()`.
 - Interpretazione corretta: Vanilla JS + `fetch` sostituisce HTMX/Jinja server-rendered come scelta frontend, non `httpx`.
 - `httpx` resta in `requirements.txt`.
 - README e checklist pc its sono stati aggiornati per indicare esplicitamente `httpx` come backend-only.
+
+## PLOG-2026-05-11-005 - Chiarimento su `requirements.txt`
+
+- Data: 2026-05-11
+- Scope: spiegare il ruolo di `requirements.txt`.
+
+### Messaggi catalogati
+
+- USER-005: chiede "`requirements.txt`? cos'e?"
+- CODEX-020: spiega che `requirements.txt` e il file standard Python che elenca le librerie da installare nella virtualenv del progetto con `pip install -r requirements.txt`.
+
+### Decisione
+
+- `requirements.txt` resta nel repo per rendere replicabile il setup su pc its, PC di casa o PC Academy.
+- Le dipendenze elencate sono backend/tooling Python, non librerie frontend.
