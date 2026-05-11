@@ -121,4 +121,9 @@ Regola operativa: prima di chiudere ogni iterazione singola, aggiungere qui una 
 
 ### Prossima azione proposta
 
-Chiudere con commit/push del setup M0, poi passare a M1/T06 `data_dragon.py` e `fetch_versions()`.
+Passare a M1/T06 `data_dragon.py` e `fetch_versions()`.
+
+### Commit e push
+
+- Commit setup M0: `96bd181` (`T01-T05: initialize project setup`).
+- Push su `origin/main`: riuscito, remoto aggiornato da `0ca1767` a `96bd181`.
