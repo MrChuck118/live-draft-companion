@@ -48,3 +48,36 @@ Le versioni moderne di `psutil` hanno wheel Windows per Python 3.12, rendendo l'
 ### Impatto
 
 Nessun cambiamento strutturale a MVP, RF, architettura o flusso dati. Cambia solo il vincolo di dipendenza per rendere T03 completabile su Python 3.12.10.
+
+## ERRATA-005 - Correzione DoD T08 item Data Dragon
+
+- Data: 2026-05-13
+- Sezione interessata: breakdown operativo v2.1, M1/T08
+- Tipo: correzione operativa di criterio di test
+- Stato: applicato nella verifica T08
+
+### Problema
+
+Il DoD T08 del breakdown cita `Luden's Companion` come item da verificare in Data Dragon. Sulla patch corrente `16.10.1`, Data Dragon `item.json` non contiene `Luden's Companion`, ma contiene `Luden's Echo`.
+
+### Aggiornamento
+
+Per T08, il controllo di esempio viene aggiornato da:
+
+```text
+Luden's Companion
+```
+
+a:
+
+```text
+Luden's Echo
+```
+
+### Motivazione
+
+Il task T08 deve verificare che `fetch_items()` restituisca item reali dalla patch corrente con nomi inglesi Data Dragon. Non bisogna inventare o rinominare item non presenti nel dataset reale.
+
+### Impatto
+
+Nessun cambiamento a MVP, RF, architettura o codice applicativo. Cambia solo l'esempio usato nel DoD per allineare il test ai dati reali di Data Dragon.

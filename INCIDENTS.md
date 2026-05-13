@@ -134,3 +134,34 @@ Per le verifiche operative usare:
 ```
 
 Evitare `pip show` multipacchetto come fonte primaria in questa console.
+
+## INC-006 - DoD T08 cita item non presente in Data Dragon patch corrente
+
+- Data rilevazione: 2026-05-13
+- Fase: M1 / T08
+- Severita: DoD blocker
+- Stato: risolto con ERRATA-005
+
+### Descrizione
+
+Durante la verifica di `fetch_items()` su Data Dragon patch `16.10.1`, l'endpoint `item.json` ha restituito 705 item. Il dataset contiene `Liandry's Torment` e non contiene il nome italiano `Tormento di Liandry`, ma non contiene `Luden's Companion`, richiesto letteralmente dal DoD T08 del breakdown.
+
+La diagnosi sui nomi item contenenti `Luden` ha restituito:
+
+```text
+["Luden's Echo", "Luden's Echo"]
+```
+
+### Impatto
+
+La funzione `fetch_items()` puo essere implementata correttamente contro Data Dragon, ma T08 non puo essere chiusa rispettando alla lettera il DoD senza inventare o rinominare un item non presente nella patch corrente.
+
+### Mitigazione proposta
+
+- Non alterare i dati Data Dragon.
+- Non sostituire artificialmente `Luden's Echo` con `Luden's Companion`.
+- Fermare la chiusura di T08 e chiedere conferma su una mini-errata operativa del DoD: sostituire il controllo di esempio `Luden's Companion` con un item realmente presente nella patch corrente, ad esempio `Luden's Echo`, mantenendo invariati scopo e formato della task.
+
+### Risoluzione
+
+L'utente ha approvato il passaggio del controllo DoD da `Luden's Companion` a `Luden's Echo`. Aggiunta `ERRATA-005` in `SPEC_ERRATA.md`. T08 verificato con Data Dragon patch `16.10.1`: 705 item, `Liandry's Torment` presente, `Luden's Echo` presente, `Tormento di Liandry` assente.
