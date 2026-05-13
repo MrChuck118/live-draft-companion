@@ -1192,3 +1192,12 @@ data_dragon.db
 
 - Procedere con `git add -A`, verificare staged diff, commit e push su `origin/main`.
 - Messaggio commit previsto: `T06-T11: implement Data Dragon cache`.
+
+### Esito commit/push
+
+- Commit creato: `0429e01` (`T06-T11: implement Data Dragon cache`).
+- Push su `origin/main`: riuscito, remoto aggiornato da `16b00d8` a `0429e01`.
+- Verifica post-push:
+  - `HEAD`: `0429e015fae57f72419836113614beb72ac5e358`
+  - `origin/main`: `0429e015fae57f72419836113614beb72ac5e358`
+- Working tree post-push: nessun file versionabile non committato; restano solo file ignorati `.venv/`, `app/__pycache__/`, `data_dragon.db`.
