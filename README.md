@@ -13,8 +13,8 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 - Modalita operativa: Demo Mode First
 - Strategia AI default: Strategia A free-only via OpenRouter
 - Frontend MVP: HTML, Tailwind CDN, Vanilla JS + fetch
-- Stato codice applicativo: M1/T11 completato (Data Dragon fetch + cache SQLite)
-- Prossimo task tecnico: M1/T12 test cache integrita
+- Stato codice applicativo: M2 chiuso (T13-T22 completati: modelli Pydantic + 7 validator + suite pytest 28/28 PASSED)
+- Prossimo task tecnico: M3/T23 prompts/system.md
 
 ## Funzionalita MVP
 

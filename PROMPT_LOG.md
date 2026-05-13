@@ -1201,3 +1201,1168 @@ data_dragon.db
   - `HEAD`: `0429e015fae57f72419836113614beb72ac5e358`
   - `origin/main`: `0429e015fae57f72419836113614beb72ac5e358`
 - Working tree post-push: nessun file versionabile non committato; restano solo file ignorati `.venv/`, `app/__pycache__/`, `data_dragon.db`.
+
+## PLOG-2026-05-13-017 - Ricognizione pc its e piano M1/T12
+
+- Data: 2026-05-13
+- Scope: ricognizione completa dopo ripresa lavori su pc its e piano per M1/T12, senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-024: chiede di applicare la regola `PROMPT_LOG.md`, registrare incidenti reali in `INCIDENTS.md`, continuare a seguire il breakdown prendendo la data odierna, leggere integralmente i tre documenti, controllare status del breakdown e file della repo, elaborare e validare un piano, esporlo prima di procedere, controllare se aggiornare il README, non inventare e non costruire.
+- CODEX-099: comunica che fara solo ricognizione e piano, senza modifiche al codice; legge spec v2.3, errata, breakdown v2.1 e breakdown status Desktop.
+- CODEX-100: comunica che `git status` diretto fallisce per `dubious ownership`; usa `git -c safe.directory=...` solo in lettura per status/log senza alterare config.
+- CODEX-101: comunica che il breakdown status Desktop e leggermente datato: dichiarava T11 non ancora committato/pushato, ma `git log` mostra T06-T11 gia in `0429e01` su `origin/main`.
+- CODEX-102: comunica che il README e PROMPT_LOG locali sono gia coerenti con T11 fatto e T12 prossimo, quindi non serve aggiornare README in fase di solo piano.
+- CODEX-103: espone piano T12 stretto: `scripts/test_data_dragon.py` riusando cache `data_dragon.db`, controlli su conteggi minimi, anti-accenti, `tags` presente, assenza `roles`; nessuna anticipazione su T07b/T13/M2+.
+- USER-025: approva il piano con "ok confermo procedi".
+
+### Stato verificato pre-implementazione
+
+- Repo locale `C:\LiveDraftCompanion`:
+  - branch `main` allineato a `origin/main` su `2590e78 docs: record Data Dragon cache push`.
+  - working tree pulito; unica untracked: `.claude/` (cartella tool Claude Code, non da versionare).
+  - log conferma `0429e01 T06-T11: implement Data Dragon cache` gia pushato.
+- M0/T05b ancora da fare manualmente, non bloccante per T12.
+- Cache SQLite `data_dragon.db` gia popolata da T11 con patch `16.10.1`, 172 champions, 705 items, 17 keystones.
+- README e PROMPT_LOG coerenti con stato T11 fatto / T12 prossimo.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano: e coerente.
+- INCIDENTS non aggiornato: nessun nuovo incidente reale.
+- PROMPT_LOG aggiornato con questa entry e con la entry successiva post-implementazione.
+
+## PLOG-2026-05-13-018 - M1/T12 `scripts/test_data_dragon.py`
+
+- Data: 2026-05-13
+- Scope: implementare solo M1/T12 dopo approvazione del piano.
+- Stato: T12 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-104: comunica che procedera solo su M1/T12, riusando cache T11, senza anticipare T13 o validators M2.
+- CODEX-105: comunica che il primo run dello script falliva per `ModuleNotFoundError: No module named 'app'` perche eseguito da `scripts/`; risolve aggiungendo la root del progetto a `sys.path` nello script stesso, senza modificare codice applicativo.
+- CODEX-106: comunica che la regex anti-accenti iniziale (`[À-ſ]`) era troppo larga e poteva matchare caratteri non italiani; stretta a `[àèéìíîòóùúÀÈÉÌÍÎÒÓÙÚ]` coerente col vincolo "no accenti italiani".
+- CODEX-107: comunica che il DoD passa con exit code 0 e conteggi visibili; aggiornera README, breakdown status Desktop e questo prompt log.
+
+### File modificati
+
+- `scripts/test_data_dragon.py`:
+  - script test integrita cache Data Dragon.
+  - chiama `check_patch_and_refresh()` per assicurare cache popolata.
+  - controlli: count champions >= 160, items >= 200, keystones >= 8; nomi senza accenti italiani; `tags` lista non vuota su ogni champion; assenza colonna `roles` nel modello `Champion`.
+  - exit code 0 se tutti i controlli passano, 1 altrimenti.
+- `README.md`:
+  - stato aggiornato a M1/T12 completato.
+  - prossimo task tecnico aggiornato a M2/T13.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T11 segnato come committato/pushato.
+  - T12 segnato come fatto.
+  - prossimo task aggiornato a M2/T13.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall scripts\test_data_dragon.py
+```
+
+- Exit code: 0.
+
+DoD T12:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\test_data_dragon.py
+```
+
+Esito:
+
+```text
+patch: 16.10.1
+champions: 172
+items: 705
+keystones: 17
+accent_check_ok: True
+tags_check_ok: True
+no_roles_column: True
+OK
+```
+
+- Exit code: 0.
+
+### Note operative
+
+- Path issue iniziale dello script risolto inserendo la root del progetto in `sys.path` direttamente nello script, in modo che funzioni indipendentemente dalla CWD; non e un incidente di progetto, e una scelta di portabilita dello script di test.
+- La regex stretta esclude solo accenti italiani; non blocca nomi Data Dragon legittimi con apostrofo come `Kai'Sa`, `Cho'Gath`, `Vel'Koz`.
+
+### Decisione
+
+- M1/T12 puo considerarsi completato.
+- Prossimo task da proporre: M2/T13 `app/models.py` con `DraftState` Pydantic.
+
+## PLOG-2026-05-13-019 - Piano M2/T13 `app/models.py`
+
+- Data: 2026-05-13
+- Scope: pianificare la prossima task del breakdown M2/T13, senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-026: chiede di procedere con la prossima task usando lo stesso metodo, e di non fare commit/push finche non li chiede esplicitamente.
+- CODEX-108: comunica che restera in modalita piano per T13, senza anticipare T14 o validators M2; segnala che i commit/push restano in attesa.
+- CODEX-109: espone piano stretto su tre modelli Pydantic v2 in `app/models.py`: `ChampionPick`, `Action`, `DraftState`; campi e tipi coerenti con LCU; nessun validator field (rinviato a T15+).
+- USER-027: approva il piano con "ok piano approvato procedi".
+
+### Stato verificato pre-implementazione
+
+- Repo locale `C:\LiveDraftCompanion`:
+  - branch `main` allineato a `origin/main` su `2590e78`.
+  - modifiche locali non committate da T12 ancora presenti: `scripts/test_data_dragon.py`, `README.md`, `PROMPT_LOG.md`, `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`.
+  - working tree pulito a parte queste modifiche e `.claude/` untracked.
+- M2/T13 dipende solo da T03b (Python/venv/dipendenze), gia chiuso.
+- Pydantic v2 e `pydantic-settings` gia installati in `.venv`.
+
+### Decisioni di design dichiarate nel piano
+
+- `ChampionPick.champion: str | None = None` per gestire pick non ancora effettuato.
+- `bans: list[str]` con stringa vuota per ban non ancora effettuato.
+- Nessun validator stretto sul `role`, sulla lunghezza dei team o sulla cardinalita ban: vincoli rinviati a T15+ secondo il breakdown.
+- Nessuna dipendenza tra `app/models.py` e `app/db.py`/`app/data_dragon.py`.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano: e gia coerente con T12 fatto / T13 prossimo.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- PROMPT_LOG aggiornato con questa entry prima dell'output.
+
+## PLOG-2026-05-13-020 - M2/T13 `app/models.py`
+
+- Data: 2026-05-13
+- Scope: implementare solo M2/T13 dopo approvazione del piano.
+- Stato: T13 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-110: comunica che procedera solo su M2/T13 con tre `BaseModel` Pydantic v2 senza validator field e senza altre modifiche.
+- CODEX-111: comunica che il DoD passa, JSON valido con `null` per pick non assegnato e stringhe vuote per ban non effettuati; aggiornera README, breakdown status Desktop e questo prompt log.
+
+### File modificati
+
+- `app/models.py`:
+  - creato modulo Pydantic v2 con tre `BaseModel`:
+    - `ChampionPick(role, champion=None)`;
+    - `Action(action_id, actor_cell_id, type, completed)`;
+    - `DraftState(patch, user_role, bans, enemy_team, ally_team, actions, local_player_cell_id)`.
+- `README.md`:
+  - stato aggiornato a M2/T13 completato.
+  - prossimo task tecnico aggiornato a M2/T14.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T13 segnato come fatto.
+  - prossimo task aggiornato a M2/T14.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\models.py
+```
+
+- Exit code: 0.
+
+DoD T13:
+
+```powershell
+.\.venv\Scripts\python.exe -c "from app.models import DraftState, ChampionPick, Action; ds = DraftState(patch='16.10.1', user_role='MID', bans=['Yasuo','','','',''], enemy_team=[ChampionPick(role='TOP', champion='Garen')], ally_team=[ChampionPick(role='MID', champion=None)], actions=[Action(action_id=1, actor_cell_id=0, type='pick', completed=False)], local_player_cell_id=2); print(ds.model_dump_json())"
+```
+
+Esito:
+
+```text
+{"patch":"16.10.1","user_role":"MID","bans":["Yasuo","","","",""],"enemy_team":[{"role":"TOP","champion":"Garen"}],"ally_team":[{"role":"MID","champion":null}],"actions":[{"action_id":1,"actor_cell_id":0,"type":"pick","completed":false}],"local_player_cell_id":2}
+```
+
+- `ChampionPick.champion=None` serializzato come `null`.
+- `bans` mantiene stringhe vuote per ban non ancora effettuati.
+- Tutti i campi richiesti dal breakdown sono presenti.
+
+### Decisione
+
+- M2/T13 puo considerarsi completato.
+- Prossimo task da proporre: M2/T14 `SuggestionItem` + `SuggestionOutput` in `app/models.py` con validator field su `explanation` (<=150 char) e `build_path` (3-4 oggetti).
+
+## PLOG-2026-05-13-021 - Piano M2/T14 `SuggestionItem` + `SuggestionOutput`
+
+- Data: 2026-05-13
+- Scope: pianificare M2/T14 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-028: chiede di procedere con la prossima task, stesso metodo, ricorda i paletti imposti (solo task corrente, no scope creep, no commit/push senza richiesta esplicita).
+- CODEX-112: comunica che restera in modalita piano per T14 e non oltrepassera i paletti.
+- CODEX-113: espone piano stretto su estensione di `app/models.py` con due nuovi `BaseModel`: `SuggestionItem` con `Field(min_length=3, max_length=4)` su `build_path` e `Field(max_length=150)` su `explanation`; `SuggestionOutput` con `Field(min_length=3, max_length=3)` su `suggestions`.
+- CODEX-114: dichiara cosa NON fara: niente validator esistenza Data Dragon, niente check italiano/mojibake, niente test file `tests/test_validators.py`, niente modifiche ai modelli T13.
+- USER-029: approva il piano con "piano approvato, procedi".
+
+### Stato verificato pre-implementazione
+
+- `app/models.py` esistente con `ChampionPick`, `Action`, `DraftState` da T13.
+- `pydantic` v2 gia installato.
+- Repo locale `main` su `2590e78` allineato a `origin/main`; modifiche T12-T13 ancora non committate per scelta utente.
+
+### Decisioni di design dichiarate nel piano
+
+- `SuggestionItem.build_path: list[str] = Field(min_length=3, max_length=4)`.
+- `SuggestionItem.explanation: str = Field(max_length=150)`.
+- `SuggestionOutput.suggestions: list[SuggestionItem] = Field(min_length=3, max_length=3)`.
+- Nessun vincolo su `rank` in T14; eventuali controlli rinviati a T15+ se necessari.
+- Nessuna validazione di esistenza champion/keystone/items contro Data Dragon: T16/T17/T18.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- PROMPT_LOG aggiornato con questa entry prima dell'output.
+
+## PLOG-2026-05-13-022 - M2/T14 `SuggestionItem` + `SuggestionOutput`
+
+- Data: 2026-05-13
+- Scope: implementare solo M2/T14 dopo approvazione del piano.
+- Stato: T14 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-115: comunica che procede solo su T14, estendendo `app/models.py` senza nuovo file e senza toccare T13.
+- CODEX-116: comunica che entrambi i test del DoD passano e aggiorna README, breakdown status Desktop e questo prompt log.
+
+### File modificati
+
+- `app/models.py`:
+  - import esteso a `Field` da `pydantic`.
+  - aggiunto `SuggestionItem` con `Field(min_length=3, max_length=4)` su `build_path` e `Field(max_length=150)` su `explanation`.
+  - aggiunto `SuggestionOutput` con `Field(min_length=3, max_length=3)` su `suggestions`.
+  - modelli T13 lasciati invariati.
+- `README.md`:
+  - stato aggiornato a M2/T14 completato.
+  - prossimo task tecnico aggiornato a M2/T15.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T14 segnato come fatto.
+  - prossimo task aggiornato a T15.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\models.py
+```
+
+- Exit code: 0.
+
+DoD T14 - Test 1 (SuggestionOutput valido con 3 SuggestionItem):
+
+```powershell
+.\.venv\Scripts\python.exe -c "from app.models import SuggestionOutput, SuggestionItem; so = SuggestionOutput(patch='16.10.1', suggestions=[SuggestionItem(rank=i, champion='Garen', build_path=['Stridebreaker','Plated Steelcaps','Sundered Sky'], keystone='Conqueror', explanation='Pick solido in lane') for i in (1,2,3)]); print(so.model_dump_json())"
+```
+
+Esito: JSON valido stampato con tre suggestion items, build_path con 3 elementi, explanation italiana entro 150 char.
+
+DoD T14 - Test 2 (explanation 200 char deve raise ValidationError):
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+from app.models import SuggestionItem
+from pydantic import ValidationError
+ok = False
+try:
+    SuggestionItem(rank=1, champion='Garen', build_path=['A','B','C'], keystone='Conqueror', explanation='x'*200)
+except ValidationError:
+    ok = True
+print('OK ValidationError raised' if ok else 'FAIL: no error raised')
+"
+```
+
+Esito:
+
+```text
+OK ValidationError raised
+```
+
+### Decisione
+
+- M2/T14 puo considerarsi completato.
+- Prossimo task da proporre: M2/T15 `app/validators.py` con `validator_format` che tenta il parsing di una stringa JSON in `SuggestionOutput` e restituisce `(True, parsed)` o `(False, error_msg)`.
+
+## PLOG-2026-05-13-023 - Piano M2/T15 `validator_format`
+
+- Data: 2026-05-13
+- Scope: pianificare M2/T15 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-030: chiede di procedere con la prossima task, stesso metodo, ricorda di non oltrepassare i paletti imposti.
+- CODEX-117: comunica che restera in modalita piano per T15 senza anticipare T16-T22 e senza commit/push.
+- CODEX-118: espone piano stretto: nuovo file `app/validators.py` con singola funzione `validator_format(json_string)` basata su `SuggestionOutput.model_validate_json`; nessuna validazione di legality, lingua, encoding, lunghezza.
+- USER-031: approva il piano con "ok procedi".
+
+### Stato verificato pre-implementazione
+
+- `app/models.py` contiene `SuggestionOutput` da T14, pronto per parsing JSON.
+- Pydantic v2 espone `model_validate_json` con `ValidationError` aggregata per parsing + schema.
+- Repo locale `main` su `2590e78`; modifiche T12-T14 ancora non committate per scelta utente.
+
+### Decisioni di design dichiarate nel piano
+
+- Firma: `validator_format(json_string: str) -> tuple[bool, SuggestionOutput | str]`.
+- Su parsing OK: ritorna `(True, parsed_model)`.
+- Su `ValidationError` (parsing JSON o schema): ritorna `(False, str(exc))`.
+- Nessun retry / chain fallback in T15: e responsabilita di T28-T29 / `AIClient`.
+- Niente test file pytest: e T22.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- PROMPT_LOG aggiornato con questa entry prima dell'output.
+
+## PLOG-2026-05-13-024 - M2/T15 `validator_format`
+
+- Data: 2026-05-13
+- Scope: implementare solo M2/T15 dopo approvazione del piano.
+- Stato: T15 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-119: comunica che procede creando `app/validators.py` con la sola funzione `validator_format`, senza altre validazioni.
+- CODEX-120: comunica che il primo run del Test 2 e fallito per quotatura PowerShell sulle doppie virgolette interne; ricostruisce il JSON via `json.dumps` ed esegue di nuovo.
+- CODEX-121: comunica che entrambi i test del DoD passano e aggiorna README, breakdown status Desktop e questo prompt log.
+
+### File modificati
+
+- `app/validators.py`:
+  - nuovo modulo.
+  - import `ValidationError` da `pydantic` e `SuggestionOutput` da `app.models`.
+  - funzione `validator_format(json_string: str) -> tuple[bool, SuggestionOutput | str]`.
+- `README.md`:
+  - stato aggiornato a M2/T15 completato.
+  - prossimo task tecnico aggiornato a M2/T16.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T15 segnato come fatto.
+  - prossimo task aggiornato a T16.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\validators.py
+```
+
+- Exit code: 0.
+
+DoD T15 - Test 1 (JSON valido):
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+from app.validators import validator_format
+from app.models import SuggestionOutput, SuggestionItem
+sample = SuggestionOutput(patch='16.10.1', suggestions=[SuggestionItem(rank=i, champion='Garen', build_path=['Stridebreaker','Plated Steelcaps','Sundered Sky'], keystone='Conqueror', explanation='Pick solido in lane') for i in (1,2,3)]).model_dump_json()
+ok, parsed = validator_format(sample)
+print('Test1 ok=', ok, 'is_model=', isinstance(parsed, SuggestionOutput))
+"
+```
+
+Esito:
+
+```text
+Test1 ok= True is_model= True
+```
+
+DoD T15 - Test 2 (JSON malformato, campo `patch` mancante e `suggestions` vuota):
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+import json
+from app.validators import validator_format
+bad = json.dumps({'suggestions': []})
+ok, parsed = validator_format(bad)
+print('Test2 ok=', ok, 'is_str=', isinstance(parsed, str))
+print('error_excerpt:', parsed.splitlines()[0] if isinstance(parsed, str) else None)
+"
+```
+
+Esito:
+
+```text
+Test2 ok= False is_str= True
+error_excerpt: 2 validation errors for SuggestionOutput
+```
+
+### Note operative
+
+- Un primo tentativo di costruire la stringa JSON malformata direttamente con escape `\"` dentro `python -c` da PowerShell e stato rotto dalla quotatura della shell, producendo `NameError: name 'ok' is not defined`. La ricostruzione via `json.dumps` ha aggirato il problema senza creare file extra ne modificare il codice T15. Non e un incidente di progetto: e una limitazione nota della quotatura PowerShell + Python `-c` gia rilevata in iterazioni precedenti.
+
+### Decisione
+
+- M2/T15 puo considerarsi completato.
+- Prossimo task da proporre: M2/T16 `validator_champion_legality` in `app/validators.py`, dipende da T15 e dalla cache Data Dragon di T12.
+
+## PLOG-2026-05-13-025 - Piano M2/T16 `validator_champion_legality`
+
+- Data: 2026-05-13
+- Scope: pianificare M2/T16 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-032: chiede di procedere con la prossima task, stesso metodo, e ricorda i paletti imposti.
+- CODEX-122: comunica che restera in modalita piano, senza anticipare T17-T22 e senza commit/push.
+- CODEX-123: espone piano stretto: estensione di `app/validators.py` con funzione async `validator_champion_legality(suggestion, draft_state) -> (bool, str | None)` e helper privato async `_load_champion_names()` che legge i nomi dalla cache `Champion`.
+- CODEX-124: dichiara firma async per coerenza con AsyncSessionLocal e con il futuro SuggestionService M7a; chiede conferma utente.
+- USER-033: approva il piano con "ok piano approvato. procedi".
+
+### Stato verificato pre-implementazione
+
+- `app/validators.py` esistente con solo `validator_format` da T15.
+- `app/models.py` esistente con `DraftState`, `SuggestionOutput`, `SuggestionItem`, `ChampionPick`.
+- `app/db.py` esistente con `AsyncSessionLocal` e modello `Champion`.
+- Cache Data Dragon `data_dragon.db` popolata con 172 champions da T11/T12.
+- Repo locale `main` su `2590e78`; modifiche T12-T15 ancora non committate per scelta utente.
+
+### Decisioni di design dichiarate nel piano
+
+- Firma async coerente con il resto della codebase DB.
+- Helper privato `_load_champion_names()` per leggere `Champion.name` dalla cache.
+- Filtri sui campi di `DraftState`: stringhe vuote in `bans` ignorate; `champion=None` in `enemy_team`/`ally_team` ignorato.
+- Lookup esatto stringa contro la cache Data Dragon.
+- Messaggio di errore informativo che indica champion problematico e motivo.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- PROMPT_LOG aggiornato con questa entry prima dell'output.
+
+## PLOG-2026-05-13-026 - M2/T16 `validator_champion_legality`
+
+- Data: 2026-05-13
+- Scope: implementare solo M2/T16 dopo approvazione del piano.
+- Stato: T16 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-125: comunica che procede solo su T16 estendendo `app/validators.py` con `_load_champion_names` async e `validator_champion_legality` async; nessuna modifica ad altri moduli.
+- CODEX-126: comunica che i tre test del DoD passano sulla prima esecuzione e aggiorna README, breakdown status Desktop e questo prompt log.
+
+### File modificati
+
+- `app/validators.py`:
+  - estensione import a `select` da `sqlalchemy`, `AsyncSessionLocal` e `Champion` da `app.db`, `DraftState` da `app.models`.
+  - aggiunta funzione async privata `_load_champion_names()` che legge tutti i `Champion.name` come `set[str]`.
+  - aggiunta funzione async `validator_champion_legality(suggestion, draft_state) -> (bool, str | None)`.
+  - `validator_format` di T15 lasciato invariato.
+- `README.md`:
+  - stato aggiornato a M2/T16 completato.
+  - prossimo task tecnico aggiornato a M2/T17.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T16 segnato come fatto.
+  - prossimo task aggiornato a T17.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\validators.py
+```
+
+- Exit code: 0.
+
+DoD T16 - tre scenari del breakdown:
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+import asyncio
+from app.models import DraftState, ChampionPick, SuggestionOutput, SuggestionItem
+from app.validators import validator_champion_legality
+
+ds = DraftState(patch='16.10.1', user_role='MID', bans=['Yasuo','','','',''], enemy_team=[ChampionPick(role='TOP', champion='Garen')], ally_team=[ChampionPick(role='MID', champion=None)], actions=[], local_player_cell_id=2)
+
+def make_so(champs):
+    return SuggestionOutput(patch='16.10.1', suggestions=[SuggestionItem(rank=i, champion=c, build_path=['A','B','C'], keystone='Conqueror', explanation='ok') for i,c in enumerate(champs, start=1)])
+
+clean = make_so(['Ahri','Syndra','Orianna'])
+print('Test1 clean:', asyncio.run(validator_champion_legality(clean, ds)))
+
+banned = make_so(['Yasuo','Syndra','Orianna'])
+print('Test2 banned:', asyncio.run(validator_champion_legality(banned, ds)))
+
+ghost = make_so(['Invokerito','Syndra','Orianna'])
+print('Test3 ghost:', asyncio.run(validator_champion_legality(ghost, ds)))
+"
+```
+
+Esito:
+
+```text
+Test1 clean: (True, None)
+Test2 banned: (False, "champion 'Yasuo' is banned")
+Test3 ghost: (False, "champion 'Invokerito' not in Data Dragon cache")
+```
+
+### Decisione
+
+- M2/T16 puo considerarsi completato.
+- Prossimo task da proporre: M2/T17 `validator_items_legality` in `app/validators.py`, lookup esatto sui nomi item rispetto a Data Dragon items (T08/T11) per ogni elemento di `build_path` in ogni suggestion.
+
+## PLOG-2026-05-13-027 - Piano M2/T17 `validator_items_legality`
+
+- Data: 2026-05-13
+- Scope: pianificare M2/T17 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-034: chiede di procedere con la prossima task, stesso metodo, ricorda i paletti imposti.
+- CODEX-127: comunica che restera in modalita piano per T17 senza anticipare T18-T22 e senza commit/push.
+- CODEX-128: espone piano stretto: estendere `app/validators.py` con `_load_item_names()` privato async e `validator_items_legality(suggestion)` async; lookup esatto contro `Item.name` cached; argomento solo `SuggestionOutput`, niente `DraftState`.
+- USER-035: approva il piano con "ok piano approvato procedi".
+
+### Stato verificato pre-implementazione
+
+- `app/validators.py` esistente con `validator_format` (T15), `_load_champion_names`/`validator_champion_legality` (T16).
+- Cache `Item` popolata con 705 voci da T11; `Liandry's Torment` confermato presente al benchmark del 09/05/2026 e di T08; `Tormento di Liandry` assente; `Pizza Margherita` inesistente in Data Dragon.
+- Repo locale `main` su `2590e78`; modifiche T12-T16 ancora non committate per scelta utente.
+
+### Decisioni di design dichiarate nel piano
+
+- Firma async coerente con T16.
+- Solo `SuggestionOutput` come argomento (no `DraftState`).
+- Early-return alla prima violazione con messaggio informativo.
+- Lookup esatto stringa contro `Item.name` cached.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- PROMPT_LOG aggiornato con questa entry prima dell'output.
+
+## PLOG-2026-05-13-028 - M2/T17 `validator_items_legality`
+
+- Data: 2026-05-13
+- Scope: implementare solo M2/T17 dopo approvazione del piano.
+- Stato: T17 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-129: comunica che procede estendendo `app/validators.py` con `Item` nel set di import e con `_load_item_names` + `validator_items_legality`; T16 lasciato invariato.
+- CODEX-130: comunica che i tre test del DoD passano alla prima esecuzione costruendo gli apostrofi via `chr(39)` per evitare quotatura PowerShell; aggiorna README, breakdown status Desktop e questo prompt log.
+
+### File modificati
+
+- `app/validators.py`:
+  - import esteso a `Item` da `app.db`.
+  - aggiunta funzione async privata `_load_item_names()` che legge tutti gli `Item.name` come `set[str]`.
+  - aggiunta funzione async `validator_items_legality(suggestion) -> (bool, str | None)`.
+  - T15 e T16 lasciati invariati.
+- `README.md`:
+  - stato aggiornato a M2/T17 completato.
+  - prossimo task tecnico aggiornato a M2/T18.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T17 segnato come fatto.
+  - prossimo task aggiornato a T18.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\validators.py
+```
+
+- Exit code: 0.
+
+DoD T17 - tre scenari del breakdown (apostrofi ricostruiti via `chr(39)` per evitare quotatura PowerShell):
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+import asyncio
+from app.models import SuggestionOutput, SuggestionItem
+from app.validators import validator_items_legality
+
+apos = chr(39)
+liandry_en = 'Liandry' + apos + 's Torment'
+liandry_it = 'Tormento di Liandry'
+fake = 'Pizza Margherita'
+
+def make_so(items):
+    return SuggestionOutput(patch='16.10.1', suggestions=[SuggestionItem(rank=i, champion='Garen', build_path=items, keystone='Conqueror', explanation='ok') for i in (1,2,3)])
+
+valid = make_so([liandry_en, liandry_en, liandry_en])
+print('Test1 valid:', asyncio.run(validator_items_legality(valid)))
+
+italian = make_so([liandry_en, liandry_it, liandry_en])
+print('Test2 italian:', asyncio.run(validator_items_legality(italian)))
+
+ghost = make_so([liandry_en, fake, liandry_en])
+print('Test3 ghost:', asyncio.run(validator_items_legality(ghost)))
+"
+```
+
+Esito:
+
+```text
+Test1 valid: (True, None)
+Test2 italian: (False, "item 'Tormento di Liandry' not in Data Dragon cache")
+Test3 ghost: (False, "item 'Pizza Margherita' not in Data Dragon cache")
+```
+
+### Decisione
+
+- M2/T17 puo considerarsi completato.
+- Prossimo task da proporre: M2/T18 `validator_keystone_legality` in `app/validators.py`, lookup esatto sui keystone della tabella `runes` di Data Dragon per ogni suggestion.
+
+## PLOG-2026-05-13-029 - Piano M2/T18 `validator_keystone_legality`
+
+- Data: 2026-05-13
+- Scope: pianificare M2/T18 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-036: chiede di procedere con la prossima task, stesso metodo, ricorda i paletti.
+- CODEX-131: comunica che restera in modalita piano per T18 senza anticipare T19-T22 e senza commit/push.
+- CODEX-132: espone piano stretto: estendere `app/validators.py` con `_load_keystone_names()` privato async e `validator_keystone_legality(suggestion)` async; pattern simmetrico a T16/T17; sfrutta il fatto che la tabella `runes` cached contiene SOLO keystone, quindi rune minori come "Manaflow Band" falliscono correttamente.
+- USER-037: approva il piano con "piano approvato procedi".
+
+### Stato verificato pre-implementazione
+
+- `app/validators.py` con T15/T16/T17 attivi.
+- Cache `Rune` popolata con 17 keystone da T11; `Conqueror` confermato presente in T09; `Cometa Arcana` confermato assente; `Manaflow Band` e una rune del slot 1 e quindi non rientra nella cache keystone-only di T09.
+- Repo locale `main` su `2590e78`; modifiche T12-T17 ancora non committate per scelta utente.
+
+### Decisioni di design dichiarate nel piano
+
+- Firma async coerente con T16/T17.
+- Solo `SuggestionOutput` come argomento.
+- Early-return alla prima violazione.
+- Lookup esatto stringa contro `Rune.name` cached.
+- Nessuna verifica semantica champion-keystone (es. coerenza Soraka/Electrocute): T18 e solo esistenza, scope del breakdown.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- PROMPT_LOG aggiornato con questa entry prima dell'output.
+
+## PLOG-2026-05-13-030 - M2/T18 `validator_keystone_legality`
+
+- Data: 2026-05-13
+- Scope: implementare solo M2/T18 dopo approvazione del piano.
+- Stato: T18 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-133: comunica che procede estendendo `app/validators.py` con `Rune` nel set di import e con `_load_keystone_names` + `validator_keystone_legality`; T15/T16/T17 lasciati invariati.
+- CODEX-134: comunica che i tre test del DoD passano alla prima esecuzione; aggiorna README, breakdown status Desktop e questo prompt log.
+
+### File modificati
+
+- `app/validators.py`:
+  - import esteso a `Rune` da `app.db`.
+  - aggiunta funzione async privata `_load_keystone_names()` che legge tutti gli `Rune.name` come `set[str]`.
+  - aggiunta funzione async `validator_keystone_legality(suggestion) -> (bool, str | None)`.
+  - T15/T16/T17 lasciati invariati.
+- `README.md`:
+  - stato aggiornato a M2/T18 completato.
+  - prossimo task tecnico aggiornato a M2/T19.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T18 segnato come fatto.
+  - prossimo task aggiornato a T19.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\validators.py
+```
+
+- Exit code: 0.
+
+DoD T18 - tre scenari del breakdown:
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+import asyncio
+from app.models import SuggestionOutput, SuggestionItem
+from app.validators import validator_keystone_legality
+
+def make_so(keystone):
+    return SuggestionOutput(patch='16.10.1', suggestions=[SuggestionItem(rank=i, champion='Garen', build_path=['A','B','C'], keystone=keystone, explanation='ok') for i in (1,2,3)])
+
+print('Test1 Conqueror:', asyncio.run(validator_keystone_legality(make_so('Conqueror'))))
+print('Test2 Cometa:', asyncio.run(validator_keystone_legality(make_so('Cometa Arcana'))))
+print('Test3 Manaflow:', asyncio.run(validator_keystone_legality(make_so('Manaflow Band'))))
+"
+```
+
+Esito:
+
+```text
+Test1 Conqueror: (True, None)
+Test2 Cometa: (False, "keystone 'Cometa Arcana' not in Data Dragon keystones")
+Test3 Manaflow: (False, "keystone 'Manaflow Band' not in Data Dragon keystones")
+```
+
+### Decisione
+
+- M2/T18 puo considerarsi completato.
+- Prossimo task da proporre: M2/T19 `validator_explanation_length` in `app/validators.py`: funzione che verifica `len(explanation) <= 150` per ogni suggestion (nota: e gia coperto dal `Field(max_length=150)` di T14, ma il breakdown lo prevede come funzione separata di defense-in-depth).
+
+## PLOG-2026-05-13-031 - Piano M2/T19 `validator_explanation_length`
+
+- Data: 2026-05-13
+- Scope: pianificare M2/T19 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-038: chiede di procedere con la prossima task, stesso metodo, ricorda i paletti.
+- CODEX-135: comunica che restera in modalita piano per T19 senza anticipare T20-T22 e senza commit/push.
+- CODEX-136: espone piano stretto: nuova funzione SYNC `validator_explanation_length(suggestion) -> (bool, str | None)` in `app/validators.py`; nessun DB lookup; early-return alla prima violazione.
+- CODEX-137: nota di testabilita: il Field(max_length=150) di T14 impedisce di costruire un SuggestionItem con 200 char tramite costruttore normale, quindi il DoD usa `model_construct` per bypassare la validazione field-level e simulare il caso defense-in-depth in cui un SuggestionOutput arriva da fonti che hanno saltato la validazione iniziale.
+- USER-039: approva il piano con "ok procedi".
+
+### Stato verificato pre-implementazione
+
+- `app/validators.py` con T15-T18 attivi e DoD verificati.
+- Modelli T14 con `Field(max_length=150)` su `explanation`: convivono con T19 come pattern defense-in-depth.
+- Repo locale `main` su `2590e78`; modifiche T12-T18 ancora non committate per scelta utente.
+
+### Decisioni di design dichiarate nel piano
+
+- Funzione sync (no DB lookup).
+- Stesso pattern di firma e ritorno degli altri validator.
+- Niente truncate / auto-fix: T19 e solo check; il truncate previsto in spec §11.2 e scope di Output Validator integrato in M3/M7a.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- PROMPT_LOG aggiornato con questa entry prima dell'output.
+
+## PLOG-2026-05-13-032 - M2/T19 `validator_explanation_length`
+
+- Data: 2026-05-13
+- Scope: implementare solo M2/T19 dopo approvazione del piano.
+- Stato: T19 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-138: comunica che procede aggiungendo solo `validator_explanation_length` sync; T15-T18 lasciati invariati.
+- CODEX-139: comunica che entrambi i test del DoD passano alla prima esecuzione, con il caso 200 char costruito via `model_construct` come da piano.
+
+### File modificati
+
+- `app/validators.py`:
+  - aggiunta funzione sync `validator_explanation_length(suggestion) -> (bool, str | None)`.
+  - T15-T18 lasciati invariati.
+- `README.md`:
+  - stato aggiornato a M2/T19 completato.
+  - prossimo task tecnico aggiornato a M2/T20.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T19 segnato come fatto.
+  - prossimo task aggiornato a T20.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\validators.py
+```
+
+- Exit code: 0.
+
+DoD T19 - due scenari del breakdown (100 char OK, 200 char fail; il secondo via `model_construct` per bypassare il Field di T14):
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+from app.models import SuggestionOutput, SuggestionItem
+from app.validators import validator_explanation_length
+
+ok_item = SuggestionItem(rank=1, champion='Garen', build_path=['A','B','C'], keystone='Conqueror', explanation='x'*100)
+short_so = SuggestionOutput(patch='16.10.1', suggestions=[ok_item, ok_item, ok_item])
+print('Test1 100char:', validator_explanation_length(short_so))
+
+bad_item = SuggestionItem.model_construct(rank=1, champion='Garen', build_path=['A','B','C'], keystone='Conqueror', explanation='x'*200)
+long_so = SuggestionOutput.model_construct(patch='16.10.1', suggestions=[bad_item, bad_item, bad_item])
+print('Test2 200char:', validator_explanation_length(long_so))
+"
+```
+
+Esito:
+
+```text
+Test1 100char: (True, None)
+Test2 200char: (False, 'explanation len 200 > 150')
+```
+
+### Decisione
+
+- M2/T19 puo considerarsi completato.
+- Prossimo task da proporre: M2/T20 `validator_utf8_encoding` in `app/validators.py`: regex anti-mojibake (`ÃÂ¨`, `Ã `, `ÃÂ²`, `ÃÂ¹`, `ÃÂ¬`, `ÃÂ©`, ecc.) su `explanation` di ogni suggestion; bug reale osservato al benchmark del 09/05/2026 su DeepSeek.
+
+## PLOG-2026-05-13-033 - Piano M2/T20 `validator_utf8_encoding`
+
+- Data: 2026-05-13
+- Scope: pianificare M2/T20 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-040: chiede di procedere con la prossima task, stesso metodo, ricorda i paletti.
+- CODEX-140: comunica che restera in modalita piano per T20 senza anticipare T21-T22 e senza commit/push.
+- CODEX-141: espone piano stretto: costante `MOJIBAKE_RE` e funzione sync `validator_utf8_encoding(suggestion)` in `app/validators.py`; regex cattura il pattern singolo `Ã` + Latin-1 Supplement basso (codepoint range U+00A0 a U+00BF) e il pattern doppio `ÃÂ` (U+00C3 + U+00C2); il check si applica a tutti i campi stringa di SuggestionOutput.
+- CODEX-142: spiega perche il testo pulito "Orianna e immobile" con `e` accentato come singolo codepoint U+00E8 non scatta la regex, mentre il testo mojibake `ÃÂ¨` scatta.
+- USER-041: approva il piano con "piano approvato procedi".
+
+### Stato verificato pre-implementazione
+
+- `app/validators.py` con T15-T19 attivi e DoD verificati.
+- `import re` non ancora presente nel file: verra aggiunto.
+- Repo locale `main` su `2590e78`; modifiche T12-T19 ancora non committate per scelta utente.
+
+### Decisioni di design dichiarate nel piano
+
+- Funzione sync (no DB lookup).
+- Check su tutti i campi stringa di SuggestionOutput: `patch`, `champion`, `keystone`, `explanation`, ogni elemento di `build_path`.
+- Regex pattern: `Ã(Â|[ -¿])` con caratteri Unicode letterali (codepoint range Latin-1 Supplement). Equivalente a `Ã(Â|[ -¿])`.
+- Niente auto-fix o retry: T20 e solo check; il retry/switch al fallback e M3/T28-T29.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- PROMPT_LOG aggiornato con questa entry prima dell'output.
+
+## PLOG-2026-05-13-034 - M2/T20 `validator_utf8_encoding`
+
+- Data: 2026-05-13
+- Scope: implementare solo M2/T20 dopo approvazione del piano.
+- Stato: T20 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-143: comunica che procede aggiungendo `import re`, costante `MOJIBAKE_RE` e funzione sync `validator_utf8_encoding`; T15-T19 lasciati invariati.
+- CODEX-144: dopo aver tentato un Edit di sostituzione regex con escape espliciti `Ã...`, l'Edit non ha trovato la stringa per via di una possibile differenza di rappresentazione del file rispetto a quanto mostrato da Read. Decide di mantenere la forma con caratteri Unicode letterali e verificare invece la correttezza della regex via repr e codepoint check, dato che la regex e gia funzionante con la fonte reale del file.
+- CODEX-145: ispezione `repr(MOJIBAKE_RE.pattern)` e tre check codepoint manuali confermano che la regex matcha mojibake singolo (`Ã¨` = U+00C3+U+00A8) e mojibake doppio (`ÃÂ¨` = U+00C3+U+00C2+U+00A8) e NON matcha testo pulito (`e` = U+00E8).
+- CODEX-146: comunica che entrambi i test del DoD passano e aggiorna README, breakdown status Desktop e questo prompt log.
+
+### File modificati
+
+- `app/validators.py`:
+  - aggiunto `import re`.
+  - aggiunta costante module-level `MOJIBAKE_RE = re.compile("Ã(Â|[ -¿])")`.
+  - aggiunta funzione sync `validator_utf8_encoding(suggestion) -> (bool, str | None)`.
+  - T15-T19 lasciati invariati.
+- `README.md`:
+  - stato aggiornato a M2/T20 completato.
+  - prossimo task tecnico aggiornato a M2/T21.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T20 segnato come fatto.
+  - prossimo task aggiornato a T21.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\validators.py
+```
+
+- Exit code: 0.
+
+Verifica codepoint regex:
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+from app.validators import MOJIBAKE_RE
+print('match_C3A8 (single):', bool(MOJIBAKE_RE.search(chr(0x00C3)+chr(0x00A8))))
+print('match_C3C2A8 (double):', bool(MOJIBAKE_RE.search(chr(0x00C3)+chr(0x00C2)+chr(0x00A8))))
+print('match_E8 (clean):', bool(MOJIBAKE_RE.search(chr(0x00E8))))
+"
+```
+
+Esito:
+
+```text
+match_C3A8 (single): True
+match_C3C2A8 (double): True
+match_E8 (clean): False
+```
+
+DoD T20 - due scenari del breakdown:
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+from app.models import SuggestionOutput, SuggestionItem
+from app.validators import validator_utf8_encoding
+
+def make_so(explanation):
+    return SuggestionOutput(patch='16.10.1', suggestions=[SuggestionItem(rank=i, champion='Orianna', build_path=['A','B','C'], keystone='Conqueror', explanation=explanation) for i in (1,2,3)])
+
+ok_text = 'Orianna ' + chr(0x00E8) + ' immobile'
+print('Test1 clean:', validator_utf8_encoding(make_so(ok_text)))
+
+mojibake_text = 'Orianna ' + chr(0x00C3) + chr(0x00C2) + chr(0x00A8) + ' immobile'
+print('Test2 mojibake:', validator_utf8_encoding(make_so(mojibake_text)))
+"
+```
+
+Esito:
+
+```text
+Test1 clean: (True, None)
+Test2 mojibake: (False, "mojibake in explanation: 'Orianna ...'")
+```
+
+Nota: i caratteri mojibake appaiono come `?` nella console PowerShell perche l'encoding di output e CP1252; internamente la stringa contiene i codepoint corretti.
+
+### Decisione
+
+- M2/T20 puo considerarsi completato.
+- Prossimo task da proporre: M2/T21 `validator_language` in `app/validators.py`: regex italiano (>=3 parole italiane comuni in `explanation`); flag se output AI ha generato in lingua diversa.
+
+## PLOG-2026-05-13-035 - Piano M2/T21 `validator_language`
+
+- Data: 2026-05-13
+- Scope: pianificare M2/T21 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-042: chiede di procedere con la prossima task, stesso metodo, ricorda i paletti.
+- CODEX-147: comunica che restera in modalita piano per T21, lista parole stretta al breakdown, no estensioni arbitrarie, no commit/push.
+- CODEX-148: espone piano stretto: costante `ITALIAN_WORDS` con esattamente le 13 parole del breakdown, helper privato `_count_italian_words` con tokenizzazione regex `[a-zA-Z']+`, funzione sync `validator_language(suggestion)` con soglia >=3 marker; early-return su prima explanation che non passa.
+- USER-043: approva il piano con "ok procedi".
+
+### Stato verificato pre-implementazione
+
+- `app/validators.py` con T15-T20 attivi e DoD verificati.
+- `import re` gia presente da T20.
+- Repo locale `main` su `2590e78`; modifiche T12-T20 ancora non committate per scelta utente.
+
+### Decisioni di design dichiarate nel piano
+
+- Funzione sync (no DB lookup).
+- Lista parole letterale dal breakdown: il, la, di, e, che, per, con, non, su, del, della, anche, molto.
+- Tokenizzazione case-insensitive con regex `[a-zA-Z']+`.
+- Soglia >=3 dalla spec §11.2.
+- Niente detector esterno (es. `langdetect`): coerente col breakdown che chiede regex semplice.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- PROMPT_LOG aggiornato con questa entry prima dell'output.
+
+## PLOG-2026-05-13-036 - M2/T21 `validator_language`
+
+- Data: 2026-05-13
+- Scope: implementare solo M2/T21 dopo approvazione del piano.
+- Stato: T21 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-149: comunica che procede aggiungendo `ITALIAN_WORDS` frozenset, `_WORD_RE`, helper `_count_italian_words` e funzione sync `validator_language`; T15-T20 lasciati invariati.
+- CODEX-150: comunica che entrambi i test del DoD passano alla prima esecuzione.
+
+### File modificati
+
+- `app/validators.py`:
+  - aggiunta costante module-level `ITALIAN_WORDS = frozenset({...})` con esattamente 13 parole dal breakdown.
+  - aggiunta costante regex `_WORD_RE = re.compile(r"[a-zA-Z']+")`.
+  - aggiunta funzione privata `_count_italian_words(text) -> int`.
+  - aggiunta funzione sync `validator_language(suggestion) -> (bool, str | None)`.
+  - T15-T20 lasciati invariati.
+- `README.md`:
+  - stato aggiornato a M2/T21 completato.
+  - prossimo task tecnico aggiornato a M2/T22.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T21 segnato come fatto.
+  - prossimo task aggiornato a T22.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\validators.py
+```
+
+- Exit code: 0.
+
+DoD T21 - due scenari del breakdown:
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+from app.models import SuggestionOutput, SuggestionItem
+from app.validators import validator_language
+
+def make_so(explanation):
+    return SuggestionOutput(patch='16.10.1', suggestions=[SuggestionItem(rank=i, champion='Garen', build_path=['A','B','C'], keystone='Conqueror', explanation=explanation) for i in (1,2,3)])
+
+italian = 'Counter forte e molto utile per la lane'
+print('Test1 italian:', validator_language(make_so(italian)))
+
+english = 'Strong against high-mobility champions'
+print('Test2 english:', validator_language(make_so(english)))
+"
+```
+
+Esito:
+
+```text
+Test1 italian: (True, None)
+Test2 english: (False, 'explanation has 0 Italian markers (need >=3)')
+```
+
+- Italian text "Counter forte e molto utile per la lane" contiene 4 marker (`e`, `molto`, `per`, `la`), sopra la soglia 3.
+- English text "Strong against high-mobility champions" contiene 0 marker.
+
+### Decisione
+
+- M2/T21 puo considerarsi completato.
+- Prossimo task da proporre: M2/T22 `tests/test_validators.py` con pytest: suite di test unitari per i 7 validator (T15-T21), almeno 2 casi positivi e 2 negativi per validator come da breakdown.
+
+## PLOG-2026-05-13-037 - Piano M2/T22 suite pytest validators
+
+- Data: 2026-05-13
+- Scope: pianificare M2/T22 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-044: chiede di procedere con la prossima task, stesso metodo, ricorda i paletti.
+- CODEX-151: comunica che restera in modalita piano per T22, senza modifiche al codice T15-T21, senza conftest, senza pytest.ini/pyproject.toml a meno di necessita stretta, senza commit/push.
+- CODEX-152: espone piano stretto: solo `tests/test_validators.py` con helper privati `_suggestion`/`_make_so`/`_draft_state`, decoratore `@pytest.mark.asyncio` sui test dei validator T16/T17/T18, 4 test per validator (>=2 positivi + >=2 negativi), totale 28 test (sopra il minimo "14 test totali" del breakdown).
+- USER-045: approva il piano con "ok procedi".
+
+### Stato verificato pre-implementazione
+
+- `app/validators.py` con T15-T21 attivi.
+- `pytest` e `pytest-asyncio` gia installati (rispettivamente 9.0.3 e 1.3.0).
+- Cache `data_dragon.db` popolata e idonea ai test T16/T17/T18.
+- Repo locale `main` su `2590e78`; modifiche T12-T21 ancora non committate per scelta utente.
+
+### Decisioni di design dichiarate nel piano
+
+- Test async via `@pytest.mark.asyncio` esplicito, in modo da evitare config su pytest.ini/pyproject.toml.
+- Helper privati con prefisso `_` per non essere collezionati come test da pytest.
+- Caso T19 negativo costruito via `model_construct` per bypassare `Field(max_length=150)` di T14.
+- Caso T20 negativo costruito via codepoint Unicode espliciti (chr(0x00C3) ecc.) per evitare problemi di encoding console PowerShell.
+- Caso T21 negativo "Buon pick lane" ha 0 marker (`buon`/`pick`/`lane` non sono nella lista), conta come case sotto soglia.
+
+### Decisioni documentali
+
+- README non aggiornato in fase di solo piano.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- PROMPT_LOG aggiornato con questa entry prima dell'output.
+
+## PLOG-2026-05-13-038 - M2/T22 `tests/test_validators.py` (M2 chiuso)
+
+- Data: 2026-05-13
+- Scope: implementare solo M2/T22 dopo approvazione del piano; con T22 M2 si considera chiuso.
+- Stato: T22 completato e verificato; M2 chiuso.
+
+### Messaggi catalogati
+
+- CODEX-153: comunica che procede creando solo `tests/test_validators.py` con 28 test totali; nessuna modifica al codice validators, modelli o config pytest.
+- CODEX-154: comunica che pytest-asyncio v1.3.0 in modalita STRICT ha riconosciuto `@pytest.mark.asyncio` senza config aggiuntiva e tutti i 28 test passano alla prima esecuzione.
+
+### File modificati
+
+- `tests/test_validators.py`:
+  - nuovo file con suite pytest.
+  - helper privati `_suggestion()`, `_make_so()`, `_draft_state()`.
+  - costanti `LIANDRY`, `LUDEN`, `CLEAN_E_GRAVE`, `MOJIBAKE_DOUBLE`, `MOJIBAKE_SINGLE_O` costruite via `chr()` per chiarezza/encoding.
+  - 4 test per ciascuno dei 7 validator (T15-T21) = 28 test totali.
+- `README.md`:
+  - stato aggiornato a M2 chiuso (T13-T22 completati).
+  - prossimo task tecnico aggiornato a M3/T23.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T22 segnato come fatto.
+  - sezione M2 chiusa.
+  - prossimo task aggiornato a M3/T23.
+- `PROMPT_LOG.md`:
+  - aggiunta questa entry.
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests\test_validators.py -v
+```
+
+Esito:
+
+```text
+collected 28 items
+[28 PASSED in 0.81s]
+```
+
+Plugin pytest attivi: `pytest-asyncio 1.3.0` in modalita `STRICT`. Nessuna configurazione aggiuntiva richiesta.
+
+### Decisione
+
+- M2/T22 puo considerarsi completato.
+- M2 (Models + Validators, T13-T22) chiuso.
+- Prossimo task da proporre: M3/T23 `prompts/system.md` con la bozza system prompt v1.0 della spec v2.3 §9.2.
