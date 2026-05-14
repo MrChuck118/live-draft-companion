@@ -2366,3 +2366,65 @@ Plugin pytest attivi: `pytest-asyncio 1.3.0` in modalita `STRICT`. Nessuna confi
 - M2/T22 puo considerarsi completato.
 - M2 (Models + Validators, T13-T22) chiuso.
 - Prossimo task da proporre: M3/T23 `prompts/system.md` con la bozza system prompt v1.0 della spec v2.3 §9.2.
+
+## PLOG-2026-05-13-039 - Chiusura sessione: commit/push M2 (T12-T22)
+
+- Data: 2026-05-13
+- Scope: chiusura sessione pc its: commit/push di tutto il lavoro T12-T22 prima di interrompere.
+- Stato: commit/push eseguiti.
+
+### Messaggi catalogati
+
+- USER-046: chiede di fermarsi qui per oggi e di fare commit/push prima di chiudere.
+- CODEX-155: comunica che procede con stage dei file di progetto (esclusa `.claude/` untracked che e cartella tool Claude Code), commit con messaggio T12-T22 e push su origin/main; poi seconda iterazione docs-only per registrare l'esito.
+
+### Stato Git pre-commit
+
+- Branch: `main`, allineato a `origin/main` su `2590e78`.
+- File versionabili da committare:
+  - nuovi: `app/models.py`, `app/validators.py`, `scripts/test_data_dragon.py`, `tests/test_validators.py`.
+  - modificati: `README.md`, `PROMPT_LOG.md`.
+- Untracked NON committato: `.claude/` (cartella tool Claude Code).
+
+### Verifiche pre-commit eseguite
+
+- `git status --short --branch`: branch `main`, conferma working tree con i sei file attesi + `.claude/`.
+- `git diff --cached --stat` dopo stage: 6 file, +1752 -2.
+
+### Commit
+
+```text
+[main 31923d5] T12-T22: add Data Dragon test script, Pydantic models and validators suite
+ 6 files changed, 1752 insertions(+), 2 deletions(-)
+ create mode 100644 app/models.py
+ create mode 100644 app/validators.py
+ create mode 100644 scripts/test_data_dragon.py
+ create mode 100644 tests/test_validators.py
+```
+
+### Push
+
+```text
+2590e78..31923d5  main -> main
+```
+
+### Esito post-push
+
+- `HEAD`: `31923d5`.
+- `origin/main`: `31923d5`.
+- Working tree pulito; restano solo `.claude/` untracked (cartella tool Claude Code) e i file ignorati standard (`.venv/`, `app/__pycache__/`, `data_dragon.db`, ecc.).
+
+### Note operative
+
+- LF/CRLF warning su tutti i 6 file: comportamento standard Git su Windows, non bloccante.
+- `safe.directory` gestito inline con `git -c safe.directory=...` per ogni comando, senza alterare la config globale.
+- `.claude/` resta untracked; decisione su gitignore eventualmente in iterazione successiva, fuori scope chiusura sessione.
+
+### Decisione
+
+- Sessione pc its 2026-05-13 chiusa.
+- Prossima ripresa: M3/T23 `prompts/system.md`.
+
+### Aggiornamento docs di stato (secondo commit di sessione)
+
+- Dopo l'aggiornamento di questa entry, verra fatto un secondo commit docs-only per registrare `PROMPT_LOG.md` e lo stato di chiusura, coerente con il pattern dei commit precedenti (separare il codice dai metadati di processo).
