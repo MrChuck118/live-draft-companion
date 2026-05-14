@@ -165,3 +165,88 @@ La funzione `fetch_items()` puo essere implementata correttamente contro Data Dr
 ### Risoluzione
 
 L'utente ha approvato il passaggio del controllo DoD da `Luden's Companion` a `Luden's Echo`. Aggiunta `ERRATA-005` in `SPEC_ERRATA.md`. T08 verificato con Data Dragon patch `16.10.1`: 705 item, `Liandry's Torment` presente, `Luden's Echo` presente, `Tormento di Liandry` assente.
+
+## INC-007 - API key OpenRouter esposta in chat durante setup T26
+
+- Data rilevazione: 2026-05-14
+- Fase: M3 / T26
+- Severita: media (rischio esposizione credenziali)
+- Stato: mitigato in repo, raccomandazione rotazione comunicata all'utente
+
+### Descrizione
+
+Durante il setup di `.env` per la DoD T26 (chiamata reale a OpenRouter per smoke test "Dimmi solo OK"), l'utente ha condiviso la propria `OPENROUTER_API_KEY` come messaggio diretto in chat invece di configurare il file `.env` localmente come suggerito.
+
+Il flusso atteso era:
+
+1. Utente copia `.env.example` in `.env` localmente.
+2. Utente edita `.env` con la propria key.
+3. Utente conferma "fatto" senza esporre la key.
+
+Il flusso effettivo:
+
+1. Utente ha pubblicato la key in chat.
+2. Codex ha emesso AVVISO SICUREZZA raccomandando di non condividere la key in canali loggabili.
+3. Codex ha proceduto a creare `.env` con la key ricevuta, mantenendo la key OUT del repository.
+
+### Impatto
+
+- Nessuna esposizione della key in file versionati del repo: `.env` e gitignored (`.gitignore:157`), verificato con `git check-ignore -v .env` e `git status --short`.
+- Nessuna scrittura della key in `PROMPT_LOG.md`, `INCIDENTS.md`, `README.md`, `SPEC_ERRATA.md` o qualsiasi altro file versionato.
+- Negli stampi di verifica usato solo prefix `sk-or-v1-b...` e lunghezza, mai il valore completo.
+- Tuttavia: la chat tra utente e Codex potrebbe essere loggata/cacheata lato sistema. La key e quindi potenzialmente esposta al di fuori del controllo dell'utente.
+
+### Mitigazione
+
+- AVVISO SICUREZZA emesso in chat con raccomandazione di:
+  - revocare la key esposta da https://openrouter.ai/keys (key che termina in `...e26d34`).
+  - generare una nuova key.
+  - aggiornare `.env` locale con la nuova key.
+- Per le iterazioni future: NON condividere mai credenziali in chat, configurare i file `.env` direttamente in locale.
+- Documentazione futura su `README.md` di buona pratica: spiegare che le key vanno scritte solo in `.env` locale, mai in chat o in file versionati.
+
+## INC-008 - Chain Strategia A interamente non disponibile durante DoD T27 (429 upstream + 404 model ID)
+
+- Data rilevazione: 2026-05-14
+- Fase: M3 / T27 (DoD smoke test JSON mode)
+- Severita: media (blocca DoD runtime, non l'implementazione)
+- Stato: aperto in attesa di decisione utente su come proseguire
+
+### Descrizione
+
+Durante la verifica DoD T27 (smoke test JSON mode contro modello primario Strategia A), 3/4 modelli della chain configurata in `.env` sono risultati rate-limited upstream e 1/4 ha restituito 404 per model ID inesistente:
+
+| Model | Esito | Latency | Provider | Note |
+|---|---|---|---|---|
+| google/gemma-4-31b-it:free | 429 (2 tentativi a 60s di distanza) | 3897 ms / 3435 ms | Google AI Studio | Rate limit upstream |
+| meta-llama/llama-3.3-70b-instruct:free | 429 | 59933 ms (timeout 60s) | Meta | Rate limit upstream |
+| mistralai/mistral-small-24b-instruct-2501:free | 404 NotFoundError | 246 ms | (n/a) | Model ID inesistente su OpenRouter |
+| qwen/qwen3-next-80b-a3b-instruct:free | 429 | 59360 ms (timeout 60s) | Venice | Rate limit upstream |
+
+Tutti i tentativi sono stati fatti dopo il successo di T26 (`ping_primary_model` con Gemma 4 free che ha restituito 'OK' in 2459 ms). Quindi tra T26 (success) e T27 (429) il rate limit Gemma 4 free e stato esaurito; e le altre opzioni della chain sono anch'esse rate-limited o non valide.
+
+### Impatto
+
+- DoD T27 chiamata reale BLOCCATA al momento della verifica.
+- Implementazione `call_model()` corretta e compilata, non rotta dall'incidente.
+- Scenario anticipato dalla spec §7.2 "rate limit upstream sui free tier non e prevedibile. La chain di 4 fallback mitiga ma non elimina il rischio. Mitigazione critica: modalita simulazione (MVP-015) sempre disponibile come piano C per la demo".
+- Soglia di switch a Strategia B (`SPEC_ERRATA.md` ERRATA-003): "rate limit upstream sui free tier registrato in `INCIDENTS.md` in >=3 sessioni di sviluppo consecutive". Al momento questa e 1 sessione: NON ancora soglia di switch.
+
+### Mitigazione - opzioni proposte all'utente
+
+1. Attendere 10-30 minuti e ritentare la DoD su Gemma 4 free (i rate limit Google AI Studio free tier sono spesso per finestra di tempo).
+2. Accettare T27 DoD come "code-only" (codice corretto, runtime rinviato a iterazione futura quando la chain torna disponibile o quando si esegue T28 fallback chain).
+3. Saltare la DoD runtime di T27 e procedere a T28 (fallback chain), che esiste specificamente per gestire questo scenario di 429 cronico e che usera la stessa funzione `call_model`.
+4. Switch a Strategia B (richiede top-up OpenRouter ~$10 da utente per sbloccare modelli paid + alzare rate limit free a 1000/giorno).
+
+### Sub-issue: Mistral model ID inesistente
+
+Indipendentemente dal rate limit, il model ID `mistralai/mistral-small-24b-instruct-2501:free` configurato in `.env.example` e `.env` non esiste su OpenRouter al momento della verifica (404). Mistral Small 3 e citato nella spec §7.2 e nel breakdown come fallback Strategia A, ma con un ID che oggi non risolve.
+
+Per correggere serve:
+
+- Identificare il model ID corretto di Mistral Small free su OpenRouter al momento (probabili candidati: `mistralai/mistral-small-3.1-24b-instruct:free`, `mistralai/mistral-small-3.2-24b-instruct:free`, da validare con OpenRouter API listing).
+- Aggiungere ERRATA-006 in `SPEC_ERRATA.md` con la correzione del model ID.
+- Aggiornare `.env.example` e `.env` con il nuovo ID corretto.
+
+Questa correzione e subordinata ad approvazione utente: non si tocca `.env.example` (committato) senza decisione esplicita.

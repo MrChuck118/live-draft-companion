@@ -2428,3 +2428,963 @@ Plugin pytest attivi: `pytest-asyncio 1.3.0` in modalita `STRICT`. Nessuna confi
 ### Aggiornamento docs di stato (secondo commit di sessione)
 
 - Dopo l'aggiornamento di questa entry, verra fatto un secondo commit docs-only per registrare `PROMPT_LOG.md` e lo stato di chiusura, coerente con il pattern dei commit precedenti (separare il codice dai metadati di processo).
+
+## PLOG-2026-05-14-001 - Piano M3/T23 `prompts/system.md`
+
+- Data: 2026-05-14
+- Scope: pianificare M3/T23 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-047: chiede di riprendere il breakdown dalla prossima task, leggere fino in fondo i 4 file di contesto (spec v2.3, SPEC_ERRATA, breakdown v2.1, breakdown_status pc its), controllare la repo, elaborare un piano validato, verificare se il README va aggiornato; ribadisce i paletti (non inventare, non costruire prima dell'approvazione, SPEC_ERRATA ha precedenza sulla spec v2.3).
+- CODEX-156: comunica analisi completata: working tree pulito su `origin/main` HEAD `48aa1a3`, M2 chiuso al 13/05/2026 con T12-T22 pushato in `31923d5`, prossimo task tecnico identificato come M3/T23.
+- CODEX-157: espone piano stretto per T23: creare un solo file `prompts/system.md` con trascrizione verbatim della bozza system prompt v1.0 dalla spec v2.3 §9.2; encoding UTF-8 senza BOM, line endings LF; niente front-matter, niente commenti aggiuntivi, niente alterazioni del testo spec; T24 (user_template) e T25 (`prompt_builder.py`) restano fuori scope T23.
+- USER-048: approva il piano con "Approvo, procedi" (opzione 1: niente commit/push automatico).
+
+### Stato verificato pre-implementazione
+
+- Branch `main` allineato a `origin/main` su `48aa1a3`.
+- Cartella `prompts/` contiene solo `.gitkeep`.
+- Spec v2.3 §9.2 contiene la bozza system prompt v1.0 testata su 4 modelli al benchmark del 09/05/2026.
+- Nessuna errata in `SPEC_ERRATA.md` interferisce con T23: ERRATA-001..005 riguardano repo/frontend/strategia AI/pin psutil/DoD T08.
+- Vincoli rigidi del prompt (italiano per `explanation`, inglese per nomi item/champion/rune, UTF-8 anti-mojibake) gia coperti dai validatori T16-T21.
+
+### Decisioni di design dichiarate nel piano
+
+- Trascrizione verbatim della spec §9.2 senza modifiche editoriali.
+- File salvato come `.md` per syntax highlighting in editor, ma il contenuto e solo il testo del system prompt (no fence markdown, no front-matter).
+- Caratteri Unicode letterali (à, è, ≤) scritti come codepoint UTF-8 nativi.
+- Nessuna versione tradotta o adattata: T23 e solo "metti la bozza spec nel repo".
+- Iterazioni future del prompt (eventuali v1.1, v1.2) saranno entry PROMPT_LOG separate con motivazione, non scope di T23.
+
+### Decisioni documentali
+
+- README aggiornato dopo l'implementazione: riga "Stato codice applicativo" passa a indicare M3 in corso con T23 completato; riga "Prossimo task tecnico" passa a M3/T24 `prompts/user_template.md`.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- SPEC_ERRATA non aggiornato: nessun errata nuovo.
+- Desktop breakdown status aggiornato dopo l'implementazione.
+- PROMPT_LOG aggiornato con questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-002 - M3/T23 `prompts/system.md`
+
+- Data: 2026-05-14
+- Scope: implementare solo M3/T23 dopo approvazione del piano.
+- Stato: T23 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-158: comunica che procede creando solo `prompts/system.md` con la bozza system prompt v1.0 dalla spec v2.3 §9.2; nessuna modifica a codice applicativo, modelli, validatori.
+- CODEX-159: comunica che il file e stato scritto con encoding UTF-8 senza BOM (verifica byte: primi 3 byte = 83 101 105 = "Sei"), 1744 byte totali, 36 righe; codepoint italiani verificati presenti (à U+00E0, è U+00E8, ≤ U+2264); nessun pattern mojibake doppio (U+00C3+U+00A8) presente.
+
+### File modificati
+
+- `prompts/system.md`:
+  - nuovo file, 1744 byte, 36 righe, UTF-8 senza BOM.
+  - contenuto: trascrizione verbatim della bozza system prompt v1.0 della spec v2.3 §9.2.
+  - sezioni presenti: ruolo coach, input ricevuti, 3 priorita scelta, vincolo JSON, "LINGUA E NOMI (vincoli rigidi)", "REGOLE IMPORTANTI", "VERIFICA FINALE prima di rispondere".
+- `README.md`:
+  - stato aggiornato a M3/T23 completato.
+  - prossimo task tecnico aggiornato a M3/T24.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T23 segnato come fatto.
+  - prossimo task aggiornato a T24.
+- `PROMPT_LOG.md`:
+  - aggiunte PLOG-2026-05-14-001 (Piano) e PLOG-2026-05-14-002 (Implementation).
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+- `SPEC_ERRATA.md`:
+  - non aggiornato: nessun errata nuovo.
+
+### Verifiche eseguite
+
+Verifica byte/encoding/codepoint:
+
+```powershell
+$bytes = [System.IO.File]::ReadAllBytes("C:\LiveDraftCompanion\prompts\system.md")
+$text = [System.IO.File]::ReadAllText("C:\LiveDraftCompanion\prompts\system.md", [System.Text.Encoding]::UTF8)
+Write-Host "Total bytes: $($bytes.Length)"
+Write-Host "First 3 bytes (BOM check): $($bytes[0..2] -join ' ')"
+Write-Host "Contains 'a' grave (U+00E0): $($text.Contains([char]0x00E0))"
+Write-Host "Contains 'e' grave (U+00E8): $($text.Contains([char]0x00E8))"
+Write-Host "Contains 'le' (U+2264): $($text.Contains([char]0x2264))"
+Write-Host "Contains mojibake U+00C3+U+00A8: $($text.Contains([char]0x00C3 + [char]0x00A8))"
+```
+
+Esito:
+
+```text
+Total bytes: 1744
+First 3 bytes (BOM check): 83 101 105
+Line count: 36
+Contains 'a' grave (U+00E0): True
+Contains 'e' grave (U+00E8): True
+Contains 'le' (U+2264): True
+Contains mojibake U+00C3+U+00A8: False
+```
+
+DoD T23 - file presente nel repo, contenuto identico alla bozza spec:
+
+- File creato: si.
+- Encoding UTF-8 senza BOM: si.
+- Contenuto identico alla bozza spec v2.3 §9.2: si (verifica visiva post-Write + check byte/codepoint).
+- Nessuna alterazione editoriale: si.
+
+### Decisione
+
+- M3/T23 puo considerarsi completato.
+- Prossimo task da proporre: M3/T24 `prompts/user_template.md` con la bozza user prompt template v1.0 della spec v2.3 §9.2 (template parametrizzato con placeholder `{patch}`, `{user_role}`, `{bans_list}`, `{enemy_picks_with_roles}`, `{ally_picks_with_roles}`).
+
+## PLOG-2026-05-14-003 - Piano M3/T24 `prompts/user_template.md`
+
+- Data: 2026-05-14
+- Scope: pianificare M3/T24 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-049: chiede di procedere con la prossima task, stesso metodo.
+- CODEX-160: comunica che restera in modalita piano per T24 senza anticipare T25 e senza commit/push.
+- CODEX-161: espone piano stretto: creare un solo file `prompts/user_template.md` con trascrizione verbatim della bozza user prompt template v1.0 dalla spec v2.3 §9.2; cinque placeholder `{patch}`, `{user_role}`, `{bans_list}`, `{enemy_picks_with_roles}`, `{ally_picks_with_roles}`; blocco JSON di esempio mantenuto come scritto nella spec; UTF-8 senza BOM, line endings LF.
+- CODEX-162: nota tecnica rinviata a T25: il blocco JSON di esempio nel template contiene graffe letterali `{...}` che entrerebbero in conflitto con `str.format()` quando in T25 si sostituiranno i placeholder; la decisione su come gestire la cosa (raddoppiare le graffe `{{...}}`, usare `string.Template`, o fare sostituzione manuale) e scope T25, non T24.
+- USER-050: approva il piano con "Approvo, procedi" (opzione 1: niente commit/push automatico).
+
+### Stato verificato pre-implementazione
+
+- Branch `main` allineato a `origin/main` su `48aa1a3`; lavoro T23 ancora non committato per scelta utente.
+- Cartella `prompts/` contiene `.gitkeep` e `system.md` (creato in T23).
+- Spec v2.3 §9.2 contiene la bozza user prompt template v1.0 come riferimento.
+- Nessuna errata in `SPEC_ERRATA.md` interferisce con T24.
+
+### Decisioni di design dichiarate nel piano
+
+- Trascrizione verbatim della spec §9.2 senza modifiche editoriali.
+- Cinque placeholder Python `{name}` lasciati come scritti nella spec.
+- Blocco JSON di esempio lasciato come scritto nella spec, comprese le graffe letterali e le ellissi (`{"rank": 2, ...}`, `{"rank": 3, ...}`).
+- Caratteri Unicode letterali per accenti italiani (à, è, é, ≤).
+- Nessuna versione "format-safe" del template in T24: la gestione delle graffe va in T25.
+
+### Decisioni documentali
+
+- README aggiornato dopo l'implementazione: T24 fatto, prossimo M3/T25 `prompt_builder.py`.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- SPEC_ERRATA non aggiornato: nessun errata nuovo.
+- Desktop breakdown status aggiornato dopo l'implementazione.
+- PROMPT_LOG aggiornato con questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-004 - M3/T24 `prompts/user_template.md`
+
+- Data: 2026-05-14
+- Scope: implementare solo M3/T24 dopo approvazione del piano.
+- Stato: T24 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-163: comunica che procede creando solo `prompts/user_template.md` con la bozza user prompt template v1.0 dalla spec v2.3 §9.2; nessuna modifica a `system.md` di T23 o a codice applicativo.
+- CODEX-164: comunica che il file e stato scritto con encoding UTF-8 senza BOM (primi 3 byte = 80 97 116 = "Pat"), 810 byte totali, 34 righe; codepoint italiani verificati presenti (à U+00E0, è U+00E8, é U+00E9, ≤ U+2264); nessun pattern mojibake; tutti e 5 i placeholder presenti; blocco JSON di esempio presente con rank 2.
+
+### File modificati
+
+- `prompts/user_template.md`:
+  - nuovo file, 810 byte, 34 righe, UTF-8 senza BOM.
+  - contenuto: trascrizione verbatim della bozza user prompt template v1.0 della spec v2.3 §9.2.
+  - placeholder presenti: `{patch}`, `{user_role}`, `{bans_list}`, `{enemy_picks_with_roles}`, `{ally_picks_with_roles}`.
+  - blocco JSON di esempio mantenuto come scritto in spec, comprese le graffe letterali (decisione di gestione rinviata a T25).
+- `README.md`:
+  - stato aggiornato a M3/T24 completato.
+  - prossimo task tecnico aggiornato a M3/T25 `prompt_builder.py`.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T24 segnato come fatto.
+  - prossimo task aggiornato a T25.
+  - `prompts/user_template.md` aggiunto all'elenco file.
+- `PROMPT_LOG.md`:
+  - aggiunte PLOG-2026-05-14-003 (Piano) e PLOG-2026-05-14-004 (Implementation).
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+- `SPEC_ERRATA.md`:
+  - non aggiornato: nessun errata nuovo.
+
+### Verifiche eseguite
+
+Verifica byte/encoding/codepoint/placeholder:
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+import re
+from pathlib import Path
+text = Path('prompts/user_template.md').read_text(encoding='utf-8')
+bytes_ = Path('prompts/user_template.md').read_bytes()
+mojibake = re.compile(chr(0x00C3) + '(' + chr(0x00C2) + '|[' + chr(0x00A0) + '-' + chr(0x00BF) + '])')
+placeholders = ['{patch}', '{user_role}', '{bans_list}', '{enemy_picks_with_roles}', '{ally_picks_with_roles}']
+print('Total bytes:', len(bytes_))
+print('First 3 bytes (BOM check):', list(bytes_[:3]))
+print('Mojibake detected:', mojibake.search(text) is not None)
+for p in placeholders:
+    print(f'Placeholder {p}:', p in text)
+"
+```
+
+Esito:
+
+```text
+Total bytes: 810
+First 3 bytes (BOM check): [80, 97, 116]
+Lines: 34
+Mojibake detected: False
+Has a-grave U+00E0 (gia): True
+Has e-grave U+00E8 (e): True
+Has e-acute U+00E9 (perche): True
+Has leq U+2264: True
+Placeholder {patch}: True
+Placeholder {user_role}: True
+Placeholder {bans_list}: True
+Placeholder {enemy_picks_with_roles}: True
+Placeholder {ally_picks_with_roles}: True
+Has JSON sample with rank 2: True
+```
+
+DoD T24 - file presente nel repo, contenuto identico alla bozza spec:
+
+- File creato: si.
+- Encoding UTF-8 senza BOM: si.
+- Contenuto identico alla bozza spec v2.3 §9.2: si (verifica byte + check codepoint + check placeholder).
+- Tutti e 5 i placeholder presenti: si.
+- Blocco JSON di esempio presente: si.
+
+### Decisione
+
+- M3/T24 puo considerarsi completato.
+- Prossimo task da proporre: M3/T25 `app/prompt_builder.py` con funzione `build_prompt(draft_state: DraftState, champion_data: dict) -> tuple[str, str]` che restituisce `(system_prompt, user_prompt)` con sostituzione placeholder. In T25 va decisa la gestione delle graffe letterali del blocco JSON nel template: opzioni sono raddoppio `{{...}}`, `string.Template`, o sostituzione manuale.
+
+## PLOG-2026-05-14-005 - Piano M3/T25 `app/prompt_builder.py`
+
+- Data: 2026-05-14
+- Scope: pianificare M3/T25 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-051: chiede di procedere con la prossima task, stesso metodo, ribadisce paletti (no invenzione, SPEC_ERRATA prioritaria, plan-first).
+- CODEX-165: comunica che restera in modalita piano per T25, verifica firme reali di `app/models.py` prima di esporre il piano (ChampionPick.champion: str | None, DraftState.bans: list[str], enemy_team/ally_team: list[ChampionPick]).
+- CODEX-166: espone piano stretto: un solo file `app/prompt_builder.py` con costante `_PROMPTS_DIR`, due helper privati `_format_bans` e `_format_picks`, funzione pubblica `build_prompt(draft_state, champion_data) -> tuple[str, str]`.
+- CODEX-167: decisione critica T25 sulle graffe letterali JSON del template T24: scelta `.replace()` puntuale per ogni placeholder invece di `str.format()`; motivazione: opzioni alternative (raddoppio graffe, `string.Template`) richiederebbero modificare `prompts/user_template.md` rispetto alla spec verbatim, violando la decisione T24.
+- CODEX-168: decisione su `champion_data`: parametro mantenuto in firma per contratto stabile verso T45b SuggestionService, ma non usato nel body T25; nessun arricchimento con tags/stats in T25; lo spec §8.1 menziona "draft state arricchito + dati Data Dragon" senza specificare cosa arricchire; iterazione del prompt rinviata a entry PROMPT_LOG futura.
+- USER-052: approva il piano con "Approvo, procedi" (opzione 1: niente commit/push automatico).
+
+### Stato verificato pre-implementazione
+
+- Branch `main` allineato a `origin/main` su `48aa1a3`; lavoro T23-T24 ancora non committato per scelta utente.
+- `app/models.py` letto e validato: `DraftState` con `patch: str`, `user_role: str`, `bans: list[str]`, `enemy_team`/`ally_team: list[ChampionPick]`; `ChampionPick(role: str, champion: str | None = None)`.
+- `prompts/system.md` (1744 byte, da T23) e `prompts/user_template.md` (810 byte, da T24) esistenti e validati UTF-8 no BOM.
+- Cartella `app/` con `data_dragon.py`, `db.py`, `models.py`, `validators.py`, pycache: import standard `from app.models import ...` funziona dal modulo nuovo.
+
+### Decisioni di design dichiarate nel piano
+
+- Sostituzione placeholder via `.replace()` esplicito a catena (5 chiamate), non `str.format()`.
+- Helper privati `_format_bans` e `_format_picks` con prefisso `_` per non comparire come API pubblica.
+- Placeholder per slot vuoti: `(non bannato)` per ban vuoti, `(non pickato)` per pick None.
+- Path prompt risolto via `Path(__file__).resolve().parent.parent / "prompts"`, robusto rispetto al CWD del processo.
+- Lettura file su ogni chiamata, no cache: file IO trascurabile rispetto a latenza AI; cache aggiungerebbe complessita non richiesta.
+- `champion_data` accettato come `dict` per firma, non letto nel body: arricchimento rinviato a iterazione futura del prompt (entry PROMPT_LOG separata, non scope T25).
+- Docstring modulo + funzioni in inglese, coerenti con convenzione di `app/models.py` e `app/validators.py`.
+
+### Decisioni documentali
+
+- README aggiornato dopo l'implementazione: T25 fatto, prossimo M3/T26 ai_client config.
+- INCIDENTS non aggiornato: nessun incidente nuovo.
+- SPEC_ERRATA non aggiornato: nessun errata nuovo.
+- Desktop breakdown status aggiornato dopo l'implementazione.
+- PROMPT_LOG aggiornato con questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-006 - M3/T25 `app/prompt_builder.py`
+
+- Data: 2026-05-14
+- Scope: implementare solo M3/T25 dopo approvazione del piano.
+- Stato: T25 completato e verificato.
+
+### Messaggi catalogati
+
+- CODEX-169: comunica che procede creando solo `app/prompt_builder.py` con design descritto nel piano; nessuna modifica a `system.md`, `user_template.md`, modelli, validatori, db.
+- CODEX-170: verifica DoD T25 inline su DraftState mock con 3 champion (Garen, Lee Sin, Soraka), 3 ban valorizzati + 2 vuoti, 1 pick None nella ally team; tutte le asserzioni passano alla prima esecuzione.
+
+### File modificati
+
+- `app/prompt_builder.py`:
+  - nuovo file, 36 righe.
+  - costante module-level `_PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"`.
+  - helper privato `_format_bans(bans: list[str]) -> str` con numerazione 1-N e placeholder `(non bannato)` per slot vuoti.
+  - helper privato `_format_picks(picks: list[ChampionPick]) -> str` con formato `{role}: {champion}` e placeholder `(non pickato)` per `champion=None`.
+  - funzione pubblica `build_prompt(draft_state: DraftState, champion_data: dict) -> tuple[str, str]`: legge `system.md` e `user_template.md` con `encoding="utf-8"` esplicito, formatta i 3 derivati (`bans_list`, `enemy_picks`, `ally_picks`), sostituisce i 5 placeholder via `.replace()` a catena, restituisce `(system_prompt, user_prompt)`.
+  - `champion_data` non usato nel body in T25 (decisione documentata in piano).
+- `README.md`:
+  - stato aggiornato a M3/T25 completato.
+  - prossimo task tecnico aggiornato a M3/T26 ai_client config.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T25 segnato come fatto.
+  - prossimo task aggiornato a T26.
+  - `app/prompt_builder.py` aggiunto all'elenco file.
+- `PROMPT_LOG.md`:
+  - aggiunte PLOG-2026-05-14-005 (Piano) e PLOG-2026-05-14-006 (Implementation).
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+- `SPEC_ERRATA.md`:
+  - non aggiornato: nessun errata nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\prompt_builder.py
+```
+
+- Exit code: 0.
+
+DoD T25 - DraftState mock con 3 champion + ban + pick None:
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+from app.models import DraftState, ChampionPick
+from app.prompt_builder import build_prompt
+
+mock_ds = DraftState(
+    patch='16.10.1', user_role='MID',
+    bans=['Yasuo', 'Zed', 'LeBlanc', '', ''],
+    enemy_team=[ChampionPick(role='TOP', champion='Garen'), ChampionPick(role='JUNGLE', champion='Lee Sin')],
+    ally_team=[ChampionPick(role='MID', champion=None), ChampionPick(role='SUPPORT', champion='Soraka')],
+    actions=[], local_player_cell_id=2,
+)
+sys_p, user_p = build_prompt(mock_ds, {})
+print('system_prompt non vuoto:', sys_p != '')
+print('user_prompt non vuoto:', user_p != '')
+print('len(system_prompt):', len(sys_p))
+print('len(user_prompt):', len(user_p))
+print('Garen in user:', 'Garen' in user_p)
+print('Lee Sin in user:', 'Lee Sin' in user_p)
+print('Soraka in user:', 'Soraka' in user_p)
+print('patch 16.10.1 in user:', '16.10.1' in user_p)
+print('user_role MID in user:', 'MID' in user_p)
+print('Yasuo (ban) in user:', 'Yasuo' in user_p)
+print('placeholder non bannato in user:', '(non bannato)' in user_p)
+print('placeholder non pickato in user:', '(non pickato)' in user_p)
+"
+```
+
+Esito:
+
+```text
+system_prompt non vuoto: True
+user_prompt non vuoto: True
+len(system_prompt): 1738
+len(user_prompt): 859
+Garen in user: True
+Lee Sin in user: True
+Soraka in user: True
+patch 16.10.1 in user: True
+user_role MID in user: True
+Yasuo (ban) in user: True
+placeholder non bannato in user: True
+placeholder non pickato in user: True
+JSON sample rank 1 in user: True
+count braces aperta in user: 4
+count braces chiusa in user: 4
+```
+
+Le graffe JSON del blocco di esempio sono preservate (4 aperte + 4 chiuse = 4 oggetti JSON: outer + 3 rank), confermando che `.replace()` puntuale non ha toccato le graffe letterali. Le 5 occorrenze dei placeholder `{patch}`, `{user_role}`, `{bans_list}`, `{enemy_picks_with_roles}`, `{ally_picks_with_roles}` sono state sostituite correttamente.
+
+DoD T25 - test con DraftState mock:
+
+- Output stringhe non vuote: si (system 1738 char, user 859 char).
+- Contengono i nomi dei champion dei team: si (Garen, Lee Sin, Soraka).
+- Contengono la patch: si (16.10.1).
+
+### Decisione
+
+- M3/T25 puo considerarsi completato.
+- Prossimo task da proporre: M3/T26 `app/ai_client.py` con setup di `OpenAI(base_url="https://openrouter.ai/api/v1", api_key=...)`; lettura API key da env var; header `HTTP-Referer` e `X-Title` per OpenRouter; test "Dimmi solo OK" verso modello primario di Strategia A (`google/gemma-4-31b-it:free`).
+
+## PLOG-2026-05-14-007 - Piano M3/T26 `app/ai_client.py`
+
+- Data: 2026-05-14
+- Scope: pianificare M3/T26 senza implementare prima dell'approvazione.
+- Stato: piano approvato (Opzione A: configurazione `.env` con key reale).
+
+### Messaggi catalogati
+
+- USER-053: chiede di procedere con la prossima task, stesso metodo, ribadisce paletti.
+- CODEX-171: comunica che `.env` non esiste sul PC corrente; la DoD T26 richiede una chiamata reale all'API OpenRouter, quindi serve una API key configurata.
+- CODEX-172: espone piano stretto per T26: factory `get_client()` che istanzia `OpenAI(base_url, api_key, default_headers)` leggendo la key da env; funzione smoke `ping_primary_model()` per soddisfare la DoD; niente parametri spec full (temperature/max_tokens/response_format), niente chain di fallback, niente retry/backoff (sono scope T27-T29); header `HTTP-Referer` e `X-Title` hardcoded per identita applicazione verso OpenRouter.
+- CODEX-173: presenta 3 opzioni per gestire l'assenza di `.env`: A) utente configura `.env` con key reale ora; B) DoD parziale (smoke struttura, chiamata reale rinviata); C) attendere.
+- USER-054: sceglie Opzione A "Configuro .env ora con la mia key".
+- CODEX-174: avvisa l'utente di NON condividere la key in chat (chat potrebbe essere loggata); fornisce istruzioni `Copy-Item .env.example .env` + `notepad .env`; chiede solo conferma "fatto" senza la key.
+- USER-055: condivide direttamente la API key in chat invece di configurare `.env` localmente.
+- CODEX-175: ⚠️ AVVISO SICUREZZA emesso: raccomandata revoca + rotazione della key dopo la sessione tramite https://openrouter.ai/keys; procede comunque a creare `.env` locale con la key fornita, mantenendo la key OUT del repository (gitignored) e OUT di tutti i file versionati incluso `PROMPT_LOG.md`.
+
+### Stato verificato pre-implementazione
+
+- Branch `main` allineato a `origin/main` su `48aa1a3`; lavoro T23-T25 ancora non committato per scelta utente.
+- `.env.example` letto e validato come fonte di template per `.env`.
+- `requirements.txt` include `python-dotenv` (load_dotenv) e `openai` (SDK).
+- `.gitignore` riga 157 contiene `.env` esplicitamente (verifica `git check-ignore -v .env`).
+- Nessun file `.env` tracciato da git (`git ls-files | grep "^\.env$"` vuoto).
+
+### Decisioni di design dichiarate nel piano
+
+- Factory `get_client()` + funzione smoke `ping_primary_model()`, no classe.
+- API key letta da env var via `python-dotenv` + `os.environ.get`.
+- `RuntimeError` esplicito su key mancante (validazione ai bordi del sistema).
+- `HTTP-Referer` hardcoded a `https://github.com/MrChuck118/live-draft-companion` (identita applicazione verso OpenRouter, non config utente).
+- `X-Title` hardcoded a `Live Draft Companion`.
+- Niente caching globale del client (OpenAI client e lightweight, no singleton).
+- Niente parametri full di spec §9.4 (temperature/max_tokens/response_format): scope T27.
+- Niente chain fallback/retry/backoff: scope T28-T29.
+- DoD smoke test minimale: `messages=[{"role":"user","content":"Dimmi solo OK"}]`, no system message, no JSON mode.
+
+### Sicurezza key in PROMPT_LOG
+
+- Decisione operativa: la API key NON viene scritta in `PROMPT_LOG.md`, `INCIDENTS.md`, `README.md`, `SPEC_ERRATA.md` o qualsiasi file versionato.
+- Solo nel file `.env` locale (gitignored).
+- Negli stampi di verifica usato solo il prefisso `sk-or-v1-b...` e la lunghezza (73 caratteri), mai il valore completo.
+- INCIDENTS aggiornato con INC-007 per documentare l'esposizione della key in chat e la raccomandazione di rotazione post-sessione (senza riportare la key).
+
+### Decisioni documentali
+
+- README aggiornato dopo l'implementazione: T26 fatto, prossimo M3/T27 call_model.
+- INCIDENTS: nuovo INC-007 per esposizione key in chat (senza key, solo annotazione e raccomandazione rotazione).
+- SPEC_ERRATA non aggiornato: nessun errata nuovo.
+- Desktop breakdown status aggiornato dopo l'implementazione.
+- PROMPT_LOG aggiornato con questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-008 - M3/T26 `app/ai_client.py`
+
+- Data: 2026-05-14
+- Scope: implementare solo M3/T26 dopo approvazione del piano e configurazione `.env`.
+- Stato: T26 completato e verificato con chiamata reale.
+
+### Messaggi catalogati
+
+- CODEX-176: crea `.env` locale a partire da template `.env.example` con la API key dell'utente (file gitignored, mai versionato).
+- CODEX-177: verifica `git check-ignore -v .env` riuscita (`.gitignore:157:.env`); verifica `git status --short` non riporta `.env`; verifica `git ls-files` non riporta `.env`.
+- CODEX-178: verifica caricamento via `python-dotenv` riuscita: key prefix `sk-or-v1-b...`, length 73, model `google/gemma-4-31b-it:free`.
+- CODEX-179: crea `app/ai_client.py` con factory `get_client()` e smoke `ping_primary_model()`.
+- CODEX-180: comunica esito DoD T26: chiamata reale a Gemma 4 free ha restituito `'OK'` (2 caratteri) in 2459 ms; DoD soddisfatta al 100%.
+
+### File modificati
+
+- `.env` (locale, gitignored, NON committato):
+  - creato a partire da `.env.example`.
+  - contiene OPENROUTER_API_KEY reale + chain Strategia A.
+- `app/ai_client.py`:
+  - nuovo file, 38 righe.
+  - `load_dotenv()` a module-level per caricare `.env` automaticamente all'import.
+  - costanti `_BASE_URL = "https://openrouter.ai/api/v1"` e `_DEFAULT_HEADERS` con HTTP-Referer + X-Title.
+  - `get_client() -> OpenAI`: factory con RuntimeError esplicito su key mancante.
+  - `ping_primary_model() -> str`: smoke che invia "Dimmi solo OK" al modello primario.
+- `README.md`:
+  - stato aggiornato a M3/T26 completato.
+  - prossimo task tecnico aggiornato a M3/T27 call_model.
+- `INCIDENTS.md`:
+  - aggiunto INC-007 per esposizione API key in chat e raccomandazione rotazione post-sessione.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T26 segnato come fatto.
+  - prossimo task aggiornato a T27.
+  - `app/ai_client.py` aggiunto all'elenco file.
+- `PROMPT_LOG.md`:
+  - aggiunte PLOG-2026-05-14-007 (Piano) e PLOG-2026-05-14-008 (Implementation).
+- `SPEC_ERRATA.md`:
+  - non aggiornato: nessun errata nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\ai_client.py
+```
+
+- Exit code: 0.
+
+DoD T26 - smoke test chiamata reale verso modello primario Strategia A:
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+import time
+from app.ai_client import ping_primary_model
+t0 = time.perf_counter()
+response = ping_primary_model()
+latency_ms = int((time.perf_counter() - t0) * 1000)
+print('Response received:', response is not None)
+print('Response content:', repr(response))
+print('Latency (ms):', latency_ms)
+print('Contains OK token:', 'OK' in response or 'ok' in response)
+"
+```
+
+Esito:
+
+```text
+Response received: True
+Response type: str
+Response length: 2
+Response content: 'OK'
+Latency (ms): 2459
+Contains OK token: True
+```
+
+- Modello rispondente: `google/gemma-4-31b-it:free` (Strategia A primario).
+- Response: stringa `'OK'` esatta, 2 caratteri.
+- Latenza: 2459 ms, molto sotto il target spec RF-011 (`<=30s p95`).
+- Nessun rate limit 429 al primo tentativo.
+- Nessuna eccezione sollevata.
+
+DoD T26 - test "Dimmi solo OK" verso il modello primario (Strategia A) -> risposta valida:
+
+- File `app/ai_client.py` creato: si.
+- Setup `OpenAI(base_url=..., api_key=...)`: si.
+- API key letta da env var: si (`os.environ.get("OPENROUTER_API_KEY")`).
+- Header `HTTP-Referer` e `X-Title`: si (in `default_headers`).
+- Risposta valida dal modello primario: si (`'OK'`, 2459 ms).
+
+### Decisione
+
+- M3/T26 puo considerarsi completato.
+- Prossimo task da proporre: M3/T27 `call_model(model_id, system, user, timeout=30)` in `app/ai_client.py` con i parametri completi della spec §9.4: `temperature=0.3`, `max_tokens=1000`, `response_format={"type": "json_object"}`.
+
+## PLOG-2026-05-14-009 - Piano M3/T27 `call_model`
+
+- Data: 2026-05-14
+- Scope: pianificare M3/T27 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-056: chiede di procedere con la prossima task, stesso metodo, ribadisce paletti.
+- CODEX-181: comunica che restera in modalita piano per T27, senza anticipare T28-T30, senza commit/push.
+- CODEX-182: espone piano stretto: estendere `app/ai_client.py` (non un nuovo file) con `call_model(model_id, system, user, timeout=30) -> ChatCompletion`; parametri spec §9.4 hardcoded (temperature=0.3, max_tokens=1000, response_format={"type": "json_object"}); return raw ChatCompletion per permettere a T28-T30 di leggere usage/model/finish_reason.
+- CODEX-183: documenta rischio noto sul JSON mode dei free tier: spec §9.4 dichiara "JSON mode supportato da tutti i modelli della chain" ex-ante, ma e da validare empiricamente; nota piano: se BadRequest 400 su `response_format=json_object`, INC-008 + nota operativa.
+- USER-057: approva il piano con "Approvo, procedi" (opzione 1: niente commit/push).
+
+### Stato verificato pre-implementazione
+
+- Branch `main` allineato a `origin/main` su `48aa1a3`; lavoro T23-T26 ancora non committato per scelta utente.
+- `.env` locale presente con OPENROUTER_API_KEY valida (verificato in T26 con chiamata reale 'OK' in 2459 ms).
+- `app/ai_client.py` con `get_client()` e `ping_primary_model()` di T26, da estendere.
+- `from openai.types.chat import ChatCompletion` disponibile (verifica import preliminare).
+
+### Decisioni di design dichiarate nel piano
+
+- Funzione `call_model` aggiunta a fianco di `ping_primary_model`, no rimozione di T26.
+- Return type `ChatCompletion` raw del SDK OpenAI (opzione A nel piano), non wrapper custom.
+- Parametri spec §9.4 hardcoded nella funzione: temperature, max_tokens, response_format.
+- `timeout` parametrico con default 30 (spec §9.4 "client-side timeout 30s").
+- `messages` composti con role=system + role=user, ordine standard OpenAI.
+- Niente parsing JSON nel body: caller responsabile.
+- Niente retry/backoff/fallback: scope T28-T29.
+- Niente logging JSONL: scope T30.
+
+### Decisioni documentali
+
+- README aggiornato dopo l'implementazione: T27 fatto, prossimo M3/T28 fallback chain.
+- INCIDENTS aggiornato SOLO se JSON mode fallisce → INC-008.
+- SPEC_ERRATA non aggiornato di default.
+- Desktop breakdown status aggiornato dopo l'implementazione.
+- PROMPT_LOG aggiornato con questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-010 - M3/T27 `call_model` - implementazione OK, DoD bloccato da rate limit
+
+- Data: 2026-05-14
+- Scope: implementare M3/T27 dopo approvazione + DoD smoke test.
+- Stato: implementazione completata e compilata; DoD chiamata reale bloccata da rate limit upstream su 3/4 modelli della chain e da model ID inesistente sul 4/4.
+
+### Messaggi catalogati
+
+- CODEX-184: estende `app/ai_client.py` con import `ChatCompletion` e funzione `call_model(model_id, system, user, timeout=30)` con parametri spec §9.4.
+- CODEX-185: esegue compile check (exit 0) e DoD smoke test contro Gemma 4 free; primo tentativo 429 RateLimitError dopo 3897 ms con messaggio upstream "google/gemma-4-31b-it:free is temporarily rate-limited upstream" dal provider Google AI Studio.
+- CODEX-186: attende 60 secondi e riprova Gemma 4 free; secondo tentativo 429 dopo 3435 ms, stesso messaggio.
+- CODEX-187: tenta validazione su fallback della chain Strategia A in serie: Llama 3.3 70B free (429, 59933 ms timeout), Mistral Small 24B free (404 NotFoundError, 246 ms - model ID non esistente), Qwen3 Next 80B free (429, 59360 ms timeout).
+- CODEX-188: conclude che 3/4 modelli della chain Strategia A sono attualmente rate-limited upstream e 1/4 ha model ID errato in `.env.example` (`mistralai/mistral-small-24b-instruct-2501:free` non esiste su OpenRouter).
+- CODEX-189: la funzione `call_model` propaga correttamente le eccezioni del SDK OpenAI (RateLimitError per 429, NotFoundError per 404), confermando correttezza dell'implementazione. Il problema NON e nel codice T27 ma nello stato runtime dei free tier OpenRouter al momento della verifica.
+
+### File modificati (M3/T27)
+
+- `app/ai_client.py`:
+  - import esteso a `from openai.types.chat import ChatCompletion`.
+  - module docstring aggiornato a `M3/T26-T27`.
+  - aggiunta funzione `call_model(model_id, system, user, timeout=30) -> ChatCompletion`: chiama `client.chat.completions.create()` con `temperature=0.3`, `max_tokens=1000`, `response_format={"type": "json_object"}`, `timeout` parametrico.
+  - `get_client()` e `ping_primary_model()` di T26 invariati.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\ai_client.py
+```
+
+- Exit code: 0.
+
+DoD T27 - smoke test JSON mode contro modello primario Strategia A:
+
+```powershell
+.\.venv\Scripts\python.exe -c "
+import json, time
+from app.ai_client import call_model
+system_prompt = 'Rispondi sempre con un JSON valido, senza markdown e senza testo fuori dal JSON.'
+user_prompt = 'Restituisci un JSON con campo status uguale a OK.'
+t0 = time.perf_counter()
+response = call_model('google/gemma-4-31b-it:free', system_prompt, user_prompt)
+latency_ms = int((time.perf_counter() - t0) * 1000)
+content = response.choices[0].message.content
+print('Latency (ms):', latency_ms)
+print('Content:', repr(content))
+print('JSON parse:', 'SUCCESS' if json.loads(content) else 'FAIL')
+"
+```
+
+Esito (1° tentativo):
+
+```text
+EXCEPTION: RateLimitError
+Message: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'google/gemma-4-31b-it:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'Google AI Studio', 'is_byok': False}}, 'user_id': 'user_39Zd2oocCmwAvASwRRSHTFmOSoj'}
+Latency before fail (ms): 3897
+```
+
+Esito (2° tentativo dopo 60s):
+
+```text
+EXCEPTION: RateLimitError
+Message: Error code: 429 - stesso messaggio upstream Google AI Studio
+Latency (ms): 3435
+```
+
+Tentativi sui fallback della chain Strategia A (`.env`):
+
+```text
+=== meta-llama/llama-3.3-70b-instruct:free ===
+EXCEPTION: RateLimitError - 429 upstream provider Meta
+Latency (ms): 59933 (timeout 60s)
+
+=== mistralai/mistral-small-24b-instruct-2501:free ===
+EXCEPTION: NotFoundError - Error code: 404 - {'error': {'message': 'No endpoints found for mistralai/mistral-small-24b-instruct-2501:free.', 'code': 404}}
+Latency (ms): 246
+
+=== qwen/qwen3-next-80b-a3b-instruct:free ===
+EXCEPTION: RateLimitError - 429 upstream provider
+Latency (ms): 59360
+```
+
+### Diagnosi
+
+1. **Implementazione `call_model` corretta**: la funzione costruisce correttamente la chiamata `chat.completions.create` con i parametri spec §9.4 e propaga le eccezioni del SDK OpenAI senza alterazioni. Il comportamento osservato (`RateLimitError` per 429, `NotFoundError` per 404) e quello atteso.
+
+2. **Stato runtime free tier**: 3/4 modelli della chain Strategia A sono temporaneamente rate-limited upstream (Gemma 4 su Google AI Studio, Llama 3.3 70B su Meta, Qwen3 Next su Venice). Il 4/4 (Mistral Small 24B free) ha un model ID inesistente su OpenRouter al momento della verifica. Lo scenario era anticipato dalla spec §7.2 "rate limit upstream sui free tier non e prevedibile. La chain di 4 fallback mitiga ma non elimina il rischio".
+
+3. **Mistral model ID errato**: il valore `mistralai/mistral-small-24b-instruct-2501:free` in `.env.example` (e quindi in `.env`) restituisce 404 da OpenRouter. Il model ID corretto al momento della verifica e da scoprire (probabilmente `mistralai/mistral-small-3.1-24b-instruct:free` o simile, ma da validare empiricamente). Questa e una mini-errata da aggiungere come ERRATA-006 quando l'utente approva la correzione.
+
+### DoD T27 - stato
+
+- Implementazione codice: COMPLETATA. Codice corretto, compile OK, propagazione errori OK.
+- Chiamata reale a Gemma 4 free che restituisce JSON: BLOCCATA da rate limit upstream non controllabile.
+- Decisione su come chiudere T27: rinviata all'utente con opzioni esposte nella prossima domanda.
+
+### Decisione
+
+- M3/T27 codice: completato.
+- M3/T27 DoD verifica runtime: in attesa di decisione utente sulle opzioni: attendere rate limit, accettare DoD code-only, procedere a T28 (fallback chain) che esiste per questo scenario, o switch a Strategia B.
+- INC-008 da aggiungere in `INCIDENTS.md` per documentare l'incidente rate limit chain Strategia A.
+- ERRATA-006 da aggiungere in `SPEC_ERRATA.md` per documentare model ID Mistral inesistente (subordinato ad approvazione utente).
+
+## PLOG-2026-05-14-011 - Decisione utente su chiusura T27 e proseguimento
+
+- Data: 2026-05-14
+- Scope: registrare la decisione utente su come chiudere T27 con DoD runtime bloccato.
+- Stato: applicata.
+
+### Messaggi catalogati
+
+- USER-058: comunica decisione: segnare nel breakdown status che API key e modelli vanno controllati meglio per il funzionamento, problema rinviato. L'utente provera a trovare un modello free affidabile o investira ~$10 in API a pagamento. Continuiamo intanto con il breakdown.
+
+### Decisione applicata
+
+- T27 marcato in breakdown status come "Fatto (codice), DoD runtime rinviato per rate limit chain Strategia A".
+- Aggiunta sezione "Open Issues / Da rivedere" in Desktop breakdown status con riferimenti a INC-007 (API key esposta in chat, da ruotare) e INC-008 (chain Strategia A non disponibile + Mistral model ID 404).
+- README aggiornato con riga di stato esplicita sulla situazione open issue.
+- INC-008 gia scritto in `INCIDENTS.md` con tabella e opzioni di mitigazione.
+- ERRATA-006 NON aggiunto in `SPEC_ERRATA.md`: subordinato a investigazione utente sul model ID corretto.
+- `.env.example` NON modificato: invariato finche utente non investiga e propone correzione.
+- `.env` locale (non versionato) lasciato com'e: la key e i modelli restano in chain Strategia A "as documented".
+
+### Decisione tecnica derivata
+
+- M3/T27 codice considerato completato per scopo breakdown.
+- DoD runtime di T27 sara riverificato in T31 (test end-to-end con 3 scenari benchmark) o anticipatamente durante T28 quando la chain di fallback potra essere validata.
+- Procediamo con T28 (fallback chain con backoff + switch su 429) usando lo "stesso metodo": piano + approvazione + implementazione + docs.
+
+## PLOG-2026-05-14-012 - Piano M3/T28 fallback chain
+
+- Data: 2026-05-14
+- Scope: pianificare M3/T28 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-059: chiede di continuare con il breakdown dopo aver registrato OPEN-001 nel Desktop status.
+- CODEX-190: espone piano stretto per T28: estendere `app/ai_client.py` con `get_suggestions_with_fallback(system, user) -> ChatCompletion`; chain letta da env (LLM_MODEL_PRIMARY + 3 fallback opzionali); per ogni modello: try `call_model()`, su 429 backoff 30s + retry max 2, poi switch; su timeout switch immediato; su APIError generico (es. 404 Mistral) switch immediato; chain esaurita -> RuntimeError.
+- CODEX-191: documenta scelta test mock-based con `unittest.mock.patch`; motivazioni: chain reale rate-limited cronica (vedi OPEN-001), forzare 429 controllato richiede mock comunque, standard practice per logica fallback.
+- CODEX-192: documenta scelta `_sleep` privata module-level monkeypatchabile in test per fast-forward 30s backoff.
+- USER-060: sceglie "Approvo + test pytest file" (opzione 1: implementazione + tests/test_ai_client.py + niente commit/push).
+
+### Stato verificato pre-implementazione
+
+- `app/ai_client.py` con `get_client()` + `ping_primary_model()` + `call_model()` di T26-T27.
+- `tests/test_validators.py` con 28 test che passano (regression baseline).
+- `pytest` + `pytest-asyncio` gia installati.
+- Branch `main` allineato a `origin/main` su `48aa1a3`; lavoro T23-T27 ancora non committato.
+
+### Decisioni di design dichiarate nel piano
+
+- Funzione sync, no async (chain sequenziale, no parallelizzazione).
+- Logging via `print()` su stderr con prefisso `[ai_client]`: provvisorio, logging JSONL e T30.
+- Helper privato `_sleep(seconds)` module-level, monkeypatchabile in test.
+- Helper privato `_chain_from_env() -> list[str]` legge LLM_MODEL_PRIMARY (obbligatorio) + 3 fallback opzionali.
+- `for retry in range(3)` per ciascun modello = 1 attempt + 2 retry = max 3 chiamate per modello.
+- `except` order: RateLimitError -> APITimeoutError + TimeoutError -> APIError catch-all.
+- Test mock-based con `unittest.mock.patch("app.ai_client.call_model", side_effect=[...])`.
+- Fixture `fast_sleep` autouse=True con `monkeypatch.setattr("app.ai_client._sleep", lambda s: None)`.
+
+### Decisioni documentali
+
+- README aggiornato dopo l'implementazione: T28 fatto, prossimo M3/T29.
+- INCIDENTS non aggiornato (no nuovi incidenti previsti dal piano).
+- SPEC_ERRATA non aggiornato.
+- Desktop breakdown status aggiornato.
+- PROMPT_LOG aggiornato con questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-013 - M3/T28 fallback chain (implementazione + 6 test pytest)
+
+- Data: 2026-05-14
+- Scope: implementare solo M3/T28 dopo approvazione del piano.
+- Stato: T28 completato e verificato; suite 34/34 PASSED.
+
+### Messaggi catalogati
+
+- CODEX-193: estende `app/ai_client.py` con import esteso (`APIError`, `APITimeoutError`, `RateLimitError`, `sys`, `time`), module docstring a M3/T26-T28, helper `_sleep` + `_chain_from_env`, e funzione `get_suggestions_with_fallback`.
+- CODEX-194: crea `tests/test_ai_client.py` con 6 test mock-based: success first attempt, 429 + 2 retry + switch, timeout immediate switch, APIError immediate switch, chain exhausted, primary missing raises.
+- CODEX-195: pytest run su `tests/test_ai_client.py`: 6/6 PASSED in 0.68s.
+- CODEX-196: pytest run su `tests/`: 34/34 PASSED in 1.46s (6 T28 + 28 T22), nessuna regressione.
+
+### File modificati
+
+- `app/ai_client.py`:
+  - module docstring aggiornato a `M3/T26-T28`.
+  - import esteso a `sys`, `time`, `APIError`, `APITimeoutError`, `RateLimitError`.
+  - helper `_sleep(seconds)` module-level, monkeypatchabile in test.
+  - helper `_chain_from_env() -> list[str]`: legge LLM_MODEL_PRIMARY (RuntimeError se assente) + 3 fallback opzionali.
+  - funzione `get_suggestions_with_fallback(system, user) -> ChatCompletion`: orchestratore chain con backoff+retry+switch secondo spec §12 e §9.4.
+  - T26 `get_client`, `ping_primary_model` e T27 `call_model` invariati.
+- `tests/test_ai_client.py`:
+  - nuovo file, 6 test pytest mock-based.
+  - helper `_fake_response`, `_fake_429`, `_fake_timeout`, `_fake_api_error` con `MagicMock`.
+  - fixture `env_chain` (esplicita): setta chain 2-elementi `primary-model` + `fallback-model`.
+  - fixture `fast_sleep` (autouse=True): monkeypatch `_sleep` a no-op.
+- `README.md`:
+  - stato aggiornato a M3/T28 completato.
+  - prossimo task tecnico aggiornato a M3/T29 retry su output non valido.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T28 segnato come fatto.
+  - prossimo task aggiornato a T29.
+  - `tests/test_ai_client.py` aggiunto all'elenco file.
+- `PROMPT_LOG.md`:
+  - aggiunte PLOG-2026-05-14-012 (Piano) e PLOG-2026-05-14-013 (Implementation).
+- `INCIDENTS.md`:
+  - non aggiornato: nessun incidente reale nuovo.
+- `SPEC_ERRATA.md`:
+  - non aggiornato: nessun errata nuovo.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\ai_client.py
+```
+
+- Exit code: 0.
+
+DoD T28 - test forzando 429 sul primo modello, switch su fallback dopo 2 retry:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_ai_client.py -v
+```
+
+Esito:
+
+```text
+tests/test_ai_client.py::test_success_on_primary_first_attempt PASSED
+tests/test_ai_client.py::test_429_two_retries_then_switch_to_fallback PASSED
+tests/test_ai_client.py::test_timeout_switches_immediately PASSED
+tests/test_ai_client.py::test_apierror_switches_immediately PASSED
+tests/test_ai_client.py::test_chain_exhausted_raises PASSED
+tests/test_ai_client.py::test_chain_missing_primary_raises PASSED
+6 passed in 0.68s
+```
+
+Regression suite completa:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ -v
+```
+
+Esito:
+
+```text
+34 passed in 1.46s
+```
+
+- 6 test T28 + 28 test T22 (validators) = 34 totali.
+- Nessuna regressione su M2.
+- Backoff 30s reale evitato grazie a fixture `fast_sleep` (durata reale suite < 2s).
+
+DoD T28 - test forzando 429 sul primo modello, log mostra 2 retry attempts, switch al fallback, risposta dal secondo:
+
+- `test_429_two_retries_then_switch_to_fallback`: side_effects `[429, 429, 429, fake_response]`, `mock_call.call_count == 4` (3 attempts su primary + 1 su fallback), `result is fake_response`. PASSED.
+- Output stderr osservato durante run (catturato da pytest):
+  - `[ai_client] attempt 1/3 model=primary-model`
+  - `[ai_client] 429 from primary-model, backoff 30s (retry 1/2)`
+  - `[ai_client] attempt 2/3 model=primary-model`
+  - `[ai_client] 429 from primary-model, backoff 30s (retry 2/2)`
+  - `[ai_client] attempt 3/3 model=primary-model`
+  - `[ai_client] 429 after 2 retries on primary-model, switching to next`
+  - `[ai_client] attempt 1/3 model=fallback-model`
+  - `[ai_client] success on fallback-model`
+
+### Decisione
+
+- M3/T28 puo considerarsi completato.
+- T27 DoD runtime resta in OPEN-001 (rate limit chain Strategia A), ma `get_suggestions_with_fallback` di T28 gestisce esattamente questo scenario via switch automatico ai fallback; non e blocker per il proseguimento.
+- Prossimo task da proporre: M3/T29 `retry su output non valido (validazione Pydantic)` in `app/ai_client.py`: dopo chiamata, applicare `validator_format` + `validator_utf8_encoding`. Se falliscono, 1 retry stesso modello con stesso prompt; se anche il retry fallisce, switch al fallback.
+
+## PLOG-2026-05-14-014 - Piano M3/T29 retry validazione
+
+- Data: 2026-05-14
+- Scope: pianificare M3/T29 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-061: chiede di procedere con la prossima task, stesso metodo, ribadisce paletti.
+- CODEX-197: verifica firme `validator_format` e `validator_utf8_encoding` in `app/validators.py`: entrambi sync, no DB lookup, no async, no circular import previsto.
+- CODEX-198: espone piano stretto per T29: refactor di `get_suggestions_with_fallback` in `_try_model` privato + main; doppi contatori per modello (`rate_limit_retries` max 2 da T28 + `validation_retry_used` max 1 nuovo T29); dopo `call_model` con successo HTTP, applicare `validator_format` su content; se valido, applicare `validator_utf8_encoding` sul parsed; su fail di uno dei due: 1 retry stesso modello + stesso prompt; se gia usato il retry: switch al fallback.
+- CODEX-199: documenta scelta `_VALID_SUGGESTION_JSON` come default di `_fake_response` nei test (T28 esistenti devono aggiornarsi al nuovo flusso integrato), e 3 nuovi test T29: validation_format_fail_then_retry_succeeds, validation_format_fail_twice_switches_to_fallback, validation_mojibake_then_retry_succeeds. Totale 9 test in tests/test_ai_client.py + 28 validators = 37.
+- USER-062: approva il piano con "Approvo, procedi" (opzione 1: niente commit/push automatico).
+
+### Stato verificato pre-implementazione
+
+- `app/ai_client.py` con `get_client()`, `ping_primary_model()`, `call_model()`, `_sleep()`, `_chain_from_env()`, `get_suggestions_with_fallback()` di T26-T28.
+- `app/validators.py` con `validator_format` (sync, parsa SuggestionOutput) e `validator_utf8_encoding` (sync, scans SuggestionOutput per mojibake).
+- `tests/test_ai_client.py` con 6 test T28 mock-based, attualmente PASSED con `_fake_response('{"ok": true}')`.
+- Branch `main` allineato a `origin/main` su `48aa1a3`; lavoro T23-T28 non committato.
+
+### Decisioni di design dichiarate nel piano
+
+- Refactor: estraggo `_try_model(model_id, system, user) -> ChatCompletion | None` da `get_suggestions_with_fallback`.
+- Contatori indipendenti per modello: `rate_limit_retries` (429, max 2) e `validation_retry_used` (validazione, max 1).
+- Validatori invocati nell'ordine: `validator_format` (parsa SuggestionOutput) -> `validator_utf8_encoding` (scans parsed). Entrambi sotto lo stesso flag `validation_retry_used`.
+- Caller continua a ricevere `ChatCompletion` raw (non SuggestionOutput parsed): il caching del parsed sara scope T45b SuggestionService.
+- Nessun cambio di firma `get_suggestions_with_fallback() -> ChatCompletion`.
+- Update T28 tests: `_fake_response` cambia default da `'{"ok": true}'` a `_VALID_SUGGESTION_JSON` (json.dumps di SuggestionOutput valido).
+- 3 nuovi test T29 mock-based: format_fail+retry, format_fail+switch, mojibake+retry.
+
+### Decisioni documentali
+
+- README aggiornato dopo l'implementazione: T29 fatto, prossimo M3/T30.
+- INCIDENTS non aggiornato.
+- SPEC_ERRATA non aggiornato.
+- Desktop breakdown status aggiornato.
+- PROMPT_LOG aggiornato con questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-015 - M3/T29 retry validazione (refactor + 9 test totali)
+
+- Data: 2026-05-14
+- Scope: implementare solo M3/T29 dopo approvazione del piano.
+- Stato: T29 completato e verificato; suite 37/37 PASSED.
+
+### Messaggi catalogati
+
+- CODEX-200: aggiorna module docstring a M3/T26-T29; aggiunge `from app.validators import validator_format, validator_utf8_encoding`.
+- CODEX-201: sostituisce vecchio `get_suggestions_with_fallback` (loop semplice `for retry in range(3)`) con coppia `_try_model` (helper privato, doppi contatori 429 + validation) + `get_suggestions_with_fallback` (chain orchestrator semplificato).
+- CODEX-202: aggiorna `tests/test_ai_client.py`: import `json`, costante `_VALID_SUGGESTION_JSON` con SuggestionOutput valido (3 suggestions Garen/Darius/Sett, build path inglesi, keystone Conqueror, explanation italiane corte), `_fake_response` default cambiato; aggiunge 3 test T29.
+- CODEX-203: pytest run `tests/test_ai_client.py`: 9/9 PASSED in 0.99s.
+- CODEX-204: pytest run full `tests/`: 37/37 PASSED in 1.02s; nessuna regressione.
+
+### File modificati
+
+- `app/ai_client.py`:
+  - module docstring aggiornato a `M3/T26-T29`.
+  - aggiunto `from app.validators import validator_format, validator_utf8_encoding`.
+  - nuovo helper privato `_try_model(model_id, system, user) -> ChatCompletion | None` con doppi contatori per modello.
+  - `get_suggestions_with_fallback` semplificato: scorre la chain chiamando `_try_model` e ritorna il primo `ChatCompletion` valido.
+  - T26 `get_client`, `ping_primary_model` e T27 `call_model` invariati.
+- `tests/test_ai_client.py`:
+  - import `json`.
+  - aggiunta costante `_VALID_SUGGESTION_JSON` con SuggestionOutput valido (3 suggestions, build path inglesi, keystone Conqueror, explanation italiane <=150 char).
+  - `_fake_response` default cambiato a `_VALID_SUGGESTION_JSON`.
+  - 6 test T28 esistenti ancora PASSED senza modifiche al body, perche il default e ora valido.
+  - 3 nuovi test T29:
+    - `test_validation_format_fail_then_retry_succeeds`: invalid JSON primo attempt, valid secondo, return valido, 2 chiamate.
+    - `test_validation_format_fail_twice_switches_to_fallback`: invalid+invalid_retry su primary, valid su fallback, 3 chiamate.
+    - `test_validation_mojibake_then_retry_succeeds`: mojibake chr(0x00C3)+chr(0x00C2)+chr(0x00A8) in explanation primo attempt, clean secondo, return clean, 2 chiamate.
+- `README.md`:
+  - stato aggiornato a M3/T29 completato.
+  - prossimo task tecnico aggiornato a M3/T30 logging JSONL.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T29 segnato come fatto.
+  - prossimo task aggiornato a T30.
+- `PROMPT_LOG.md`:
+  - aggiunte PLOG-2026-05-14-014 (Piano) e PLOG-2026-05-14-015 (Implementation).
+- `INCIDENTS.md`:
+  - non aggiornato.
+- `SPEC_ERRATA.md`:
+  - non aggiornato.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\ai_client.py
+```
+
+- Exit code: 0.
+
+Pytest T28+T29 (9 test):
+
+```text
+tests/test_ai_client.py::test_success_on_primary_first_attempt PASSED
+tests/test_ai_client.py::test_429_two_retries_then_switch_to_fallback PASSED
+tests/test_ai_client.py::test_timeout_switches_immediately PASSED
+tests/test_ai_client.py::test_apierror_switches_immediately PASSED
+tests/test_ai_client.py::test_chain_exhausted_raises PASSED
+tests/test_ai_client.py::test_chain_missing_primary_raises PASSED
+tests/test_ai_client.py::test_validation_format_fail_then_retry_succeeds PASSED
+tests/test_ai_client.py::test_validation_format_fail_twice_switches_to_fallback PASSED
+tests/test_ai_client.py::test_validation_mojibake_then_retry_succeeds PASSED
+9 passed in 0.99s
+```
+
+Regression full suite:
+
+```text
+37 passed in 1.02s
+```
+
+DoD T29 verificato:
+
+- Test mock con output malformato la prima volta -> retry -> seconda risposta usata: `test_validation_format_fail_then_retry_succeeds`, `mock_call.call_count == 2`. PASSED.
+- Test mock con output sempre malformato -> switch al fallback: `test_validation_format_fail_twice_switches_to_fallback`, `mock_call.call_count == 3` (2 su primary + 1 su fallback). PASSED.
+- Caso mojibake equivalente: `test_validation_mojibake_then_retry_succeeds`, PASSED.
+
+### Decisione
+
+- M3/T29 puo considerarsi completato.
+- Prossimo task da proporre: M3/T30 logging JSONL delle chiamate AI in `logs/ai_calls_YYYY-MM-DD.jsonl` con timestamp, model_used, prompt hash, latency_ms, usage (token), cost, json_ok, validation_results, retry_count.

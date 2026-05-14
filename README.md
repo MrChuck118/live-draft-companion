@@ -13,8 +13,9 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 - Modalita operativa: Demo Mode First
 - Strategia AI default: Strategia A free-only via OpenRouter
 - Frontend MVP: HTML, Tailwind CDN, Vanilla JS + fetch
-- Stato codice applicativo: M2 chiuso (T13-T22 completati: modelli Pydantic + 7 validator + suite pytest 28/28 PASSED)
-- Prossimo task tecnico: M3/T23 prompts/system.md
+- Stato codice applicativo: M3 in corso (M2 chiuso T13-T22; M3/T23-T26 completati; M3/T27 codice completato, DoD runtime rinviato per rate limit upstream chain Strategia A - vedi INC-008; M3/T28-T29 fallback chain con 429 backoff + validation retry completati, 9/9 test pytest PASSED + 37/37 suite totale PASSED)
+- Prossimo task tecnico: M3/T30 logging JSONL chiamate AI
+- Open issues (da rivedere): API key OpenRouter da ruotare (INC-007) e chain Strategia A da validare empiricamente (INC-008: Mistral model ID 404 + 3/4 modelli rate-limited). Utente investiga modello free affidabile o switch a Strategia B paid
 
 ## Funzionalita MVP
 
