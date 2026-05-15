@@ -4294,3 +4294,84 @@ Esiti: pip check "No broken requirements"; populate_cache -> "16.10.1"; test_dat
 - OPEN-001 runtime batch T27/T31/T35 chiuso su DeepSeek diretto. OPEN-001 puo essere marcato risolto per la parte runtime sbloccabile; restano T58/T62 subordinati a OPEN-002.
 - Nessun commit/push (in attesa di richiesta esplicita utente).
 - Prossimo: Fase 2 del piano - ripresa breakdown da M5/T36 (`parse_lockfile` in `app/lcu_provider.py`), stesso metodo piano->approvazione->implementazione->docs. LoL installato su questa macchina (E:\Riot Games\League of Legends) -> T40 live testabile qui piu avanti.
+
+## PLOG-2026-05-16-037 - Commit/push 673435f + docstring fix + piano M5/T36 esposto
+
+- Data: 2026-05-16
+- Scope: applicare le 3 decisioni utente (commit/push, fix docstring, avvio Fase 2) ed esporre il piano M5/T36 in attesa di approvazione.
+- Stato: decisioni 1 e 2 applicate; decisione 3 = piano esposto, NON implementato (attesa approvazione, paletti).
+
+### Messaggi catalogati
+
+- USER-093: decisione 1 = commit/push ora; decisione 2 = correggi docstring; decisione 3 = procedi Fase 2 rispettando i paletti.
+- CODEX-255: corretto docstring `scripts/test_sim_mode.py` (OPEN-001 superato; solo commento, CRLF preservato via script Python ad hoc); compile exit 0; `tests/test_sim_mode.py` 2/2 PASSED.
+- CODEX-256: commit `673435f` (INCIDENTS.md, PROMPT_LOG.md, README.md, scripts/test_sim_mode.py) su `main`, pushato; locale == remoto; messaggio via file `-F` (lezione PLOG-032: no here-string in tool Bash); `.claude/` escluso.
+- CODEX-257: espone piano M5/T36 (`parse_lockfile`), in attesa di approvazione.
+
+### File modificati
+
+- `scripts/test_sim_mode.py`: docstring allineato (OPEN-001 superato, DeepSeek). Nessuna logica toccata.
+- `INCIDENTS.md` / `README.md` / `PROMPT_LOG.md` (PLOG-034/035/036): committati in `673435f`.
+- `PROMPT_LOG.md`: questa entry PLOG-2026-05-16-037 (post-commit, non ancora committata: documenta pianificazione in corso).
+- Codice `app/`: NON modificato. `SPEC_ERRATA.md`: NON modificato.
+
+### Commit/push
+
+- `673435f docs+chore: INC-009 Data Dragon cache prereq, README setup, OPEN-001 runtime closed`, su `main`, pushato su `origin/main`. Verifica: `git rev-parse HEAD` == `git ls-remote origin main`. 4 file, +144/-4.
+
+### Piano M5/T36 esposto (in attesa approvazione)
+
+- Task: `parse_lockfile(path) -> dict(protocol, port, password)` in nuovo file `app/lcu_provider.py` (M5 = MoSCoW Should, Demo Mode First gia rispettato: sim mode chiuso).
+- Ricerca lockfile: path standard `C:\Riot Games\League of Legends\lockfile`, poi `psutil` process discovery; su questa macchina LoL e in `E:\Riot Games\League of Legends` (path non standard -> psutil rilevante).
+- Test: con LoL aperto credentials valide; senza LoL eccezione gestita. Test mock-based + eventuale verifica reale (LoL installato qui).
+- Privacy by design (paletto spec 10.1 / breakdown nota 9): T36 e solo parser lockfile, nessuna lettura summoner; endpoint privacy-safe a T37.
+- Metodo: piano -> approvazione utente -> implementazione -> docs (PROMPT_LOG prima dell'output, INCIDENTS solo se incidente reale, niente commit senza richiesta).
+
+### Decisione
+
+- Decisioni 1 e 2 chiuse. Decisione 3: piano M5/T36 presentato; nessuna implementazione finche l'utente non approva il piano (paletto esplicito USER-093).
+- PLOG-037 lasciata non committata (documenta pianificazione in corso); sara inclusa nel prossimo commit di lavoro o su richiesta.
+
+## PLOG-2026-05-16-038 - M5/T36 lockfile parser+discovery (implementazione + 6 test)
+
+- Data: 2026-05-16
+- Scope: implementare solo M5/T36 dopo approvazione del piano.
+- Stato: T36 completato e verificato; suite 57/57 PASSED. Nessun commit (in attesa di richiesta utente).
+
+### Messaggi catalogati
+
+- USER-094: "Approvato" (piano M5/T36).
+- CODEX-258: letti file_provider.py / draft_state_provider.py / test_file_provider.py per allineare stile; verificato app/*.py LF, psutil>=5.9.8,<8 in requirements.
+- CODEX-259: creato `app/lcu_provider.py` (parse_lockfile + find_lockfile + _lockfile_from_process + LockfileError); creato `tests/test_lcu_provider.py` (6 test).
+- CODEX-260: compile exit 0; `pytest tests/test_lcu_provider.py` 6/6 PASSED; `pytest tests/` 57/57 PASSED (51 + 6, nessuna regressione).
+- CODEX-261: aggiornato README (stato codice, prossimo task M5/T37, suite 57/57, OPEN-001 runtime chiuso); PLOG-038.
+
+### File modificati
+
+- `app/lcu_provider.py` (nuovo): `parse_lockfile(path) -> dict(process_name,pid,port,password,protocol)` (formato lockfile 5 campi `:`); `find_lockfile()` path standard `C:\Riot Games\League of Legends\lockfile` poi process discovery `psutil`; `_lockfile_from_process()`; eccezione dedicata `LockfileError`. Scope T36: solo parser+discovery, nessuna chiamata HTTP, nessuna lettura summoner (privacy by design spec 10.1).
+- `tests/test_lcu_provider.py` (nuovo): 6 test (parse valido; str path + whitespace; file mancante -> LockfileError; malformato -> LockfileError; client non attivo -> LockfileError; discovery via psutil per path non standard tipo E:\Riot Games con monkeypatch).
+- `README.md`: stato codice -> M5/T36 chiuso, suite 57/57, OPEN-001 runtime chiuso; prossimo task -> M5/T37.
+- `PROMPT_LOG.md`: PLOG-037 (precedente, ancora non committata) + questa PLOG-038.
+- `INCIDENTS.md` / `SPEC_ERRATA.md`: NON modificati (nessun incidente reale, nessun errata).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\lcu_provider.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_lcu_provider.py -v
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: compile exit 0; 6/6 T36 PASSED; suite totale 57 passed.
+
+### DoD T36
+
+- `parse_lockfile` con LoL aperto -> credentials valide: VERIFICATO via test (lockfile reale 5 campi). Verifica live reale su questa macchina (LoL in E:\Riot Games\League of Legends) RINVIATA a T40, come da piano approvato (no apertura client ora).
+- Senza LoL -> eccezione gestita: VERIFICATO (`LockfileError`, non eccezione nuda).
+- Discovery psutil per path non standard: VERIFICATO via monkeypatch.
+
+### Decisione
+
+- M5/T36 chiuso lato codice. Verifica live (path reale E:\) confermata in scope T40.
+- Nessun commit/push in questa iterazione (paletto: solo su richiesta utente). PLOG-037 e PLOG-038 + codice T36 + README pronti per il prossimo commit quando richiesto.
+- Prossimo task tecnico: M5/T37 (`lcu_request` httpx con HTTP Basic + verify=False, endpoint privacy-safe `/lol-gameflow/v1/session`), stesso metodo piano->approvazione->implementazione->docs.
