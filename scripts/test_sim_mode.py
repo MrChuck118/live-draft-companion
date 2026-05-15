@@ -1,9 +1,11 @@
 """Sim-mode end-to-end smoke: FileProvider -> PromptBuilder -> AIClient chain -> output (M4/T35).
 
-Esegue il flusso sim per i 5 scenari mock. La parte AI reale e impattata da
-OPEN-001 (chain rate-limited): eseguito da CLI ora ogni scenario terminera in
-CONTROLLED_FAILURE. La verifica ">=3/5 SuggestionOutput valido" e rinviata a
-OPEN-001 batch. La logica del flusso e verificata via tests/test_sim_mode.py.
+Esegue il flusso sim per i 5 scenari mock contro il provider AI configurato in
+.env (DeepSeek diretto, ERRATA-006). DoD runtime OPEN-001 chiuso il 2026-05-16:
+5/5 VALID su deepseek-chat (vedi PROMPT_LOG PLOG-2026-05-16-036). Gli scenari
+restano PLUMBING (OPEN-002): la pipeline e validata, la qualita dei suggerimenti
+no. Eseguire da root con PYTHONPATH impostato. La logica del flusso e anche
+coperta da tests/test_sim_mode.py (mock).
 """
 
 import asyncio

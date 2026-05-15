@@ -4185,3 +4185,112 @@ Esito:
 - Nessuna modifica a codice o configurazione.
 - Nessuna verifica test necessaria: lavoro solo documentale/processo.
 - Prossimo passo operativo possibile: committare `PROMPT_LOG.md` quando l'utente lo chiede, lasciando `.claude/` fuori dal commit.
+
+## PLOG-2026-05-16-034 - Ripresa progetto su PC casa: analisi, piano, decisioni utente
+
+- Data: 2026-05-16
+- Scope: nuova sessione (Claude) su PC di casa; lettura integrale spec v2.3 + SPEC_ERRATA v1 + breakdown v2.1 + breakdown status pc its + INCIDENTS + PROMPT_LOG; analisi discordanze; piano operativo; decisioni utente; subtask inserimento key DeepSeek.
+- Stato: decisioni di piano approvate; Gate A (.env) eseguito dall'utente; in attesa di "ok" per Fase 1.
+
+### Messaggi catalogati
+
+- USER-086: fornisce spec v2.3, SPEC_ERRATA v1, breakdown v2.1, breakdown status pc its; chiede analisi discordanze, stato breakdown/prossima task/arretrati, controllo repo, piano da validare prima di costruire, controllo README; subtask: dove inserire la API key DeepSeek (la inserisce a mano), dichiara che il "nuovo modello" e "deepseek v4 flash".
+- CODEX-245: letti tutti i file e lo stato git/repo; PROMPT_LOG risulta aggiornato fino a PLOG-2026-05-15-033; rilevato che questa macchina NON e "pc its" (no .venv, Python 3.12.10 in PATH, LoL installato in E:\Riot Games\League of Legends = PC casa = ambiente live-test spec 13.1); flag discordanza: "deepseek-v4-flash" non esiste sull'API DeepSeek diretta (era alias OpenRouter); risposta subtask: .env riga 5 DEEPSEEK_API_KEY, gitignored, letta da app/ai_client.py:25.
+- CODEX-246: due domande (AskUserQuestion): modelli .env; sequenza lavoro.
+- USER-087: risposte: mantenere deepseek-chat/deepseek-reasoner (solo riga 5 key); sequenza = batch runtime OPEN-001 prima, poi M5/T36.
+- CODEX-247: piano finalizzato in fasi (Fase 0 bootstrap env, Gate A .env utente, Fase 1 batch runtime OPEN-001, Fase 2 M5/T36); in attesa di "procedi".
+- USER-088: chiede di riscrivere l'output del piano in italiano e verificare che il PROMPT_LOG non contenga testo inglese.
+- CODEX-248: conferma PROMPT_LOG non toccato in questa sessione (nessun testo inglese da correggere); riscrive il piano in italiano.
+- USER-089: "fatto" -> Gate A eseguito dall'utente (.env creato con DEEPSEEK_API_KEY reale, righe modelli invariate).
+
+### Decisioni
+
+- Decisioni utente registrate: modelli chain DeepSeek invariati (deepseek-chat primario, deepseek-reasoner fallback); sequenza Fase 1 (OPEN-001 runtime) prima di Fase 2 (M5/T36).
+- Discordanza documentata: la dicitura utente "deepseek v4 flash" non ha ID reale sull'API diretta; mappato su deepseek-chat (gia in .env.example, coerente con PLOG-2026-05-15-030). Nessuna ERRATA nuova: gia coperto da ERRATA-006.
+- README: gia allineato allo switch DeepSeek, nessun aggiornamento necessario ora.
+- Breakdown status (file Desktop pc its) NON nel repo e non raggiungibile da questa macchina: lo stato forward-looking resta tracciato qui nel PROMPT_LOG.
+- Prossimo: Fase 0 bootstrap ambiente (venv + pip install + pip check + pytest tests/) senza commit; poi attesa "ok" per Fase 1.
+- INCIDENTS / SPEC_ERRATA: non aggiornati (nessun incidente reale nuovo, nessun errata nuovo).
+
+## PLOG-2026-05-16-035 - Fase 0 bootstrap + INC-009 (cache Data Dragon) + README
+
+- Data: 2026-05-16
+- Scope: Fase 0 del piano (bootstrap ambiente su PC casa) + risoluzione divergenza suite test + allineamento README.
+- Stato: completato. Baseline 51/51 ripristinata. Nessun commit (come da piano, in attesa di "ok" Fase 1).
+
+### Messaggi catalogati
+
+- USER-090: "fatto" (Gate A: .env creato con DEEPSEEK_API_KEY reale, righe modelli invariate).
+- CODEX-249: Fase 0 - venv creata, `pip install -r requirements.txt`, `pip check` OK. `pytest tests/` -> 39 pass / 12 fail (solo validator legality), causa `sqlite3.OperationalError: no such table: champions`; `data_dragon.db` 0-byte gitignored, cache mai popolata su questo PC. Diagnosi: prerequisito ambiente, non regressione. Stop e report con 3 punti proposti.
+- USER-091: "Procedi" (approva i 3 punti: popolamento cache + INC-009 + README).
+- CODEX-250: rimosso `data_dragon.db` 0-byte; `populate_cache()` -> patch 16.10.1; `scripts/test_data_dragon.py` exit 0 (172 champions, 705 items, 17 keystones, accent/tags/no-roles OK); `pytest tests/` 51/51 PASSED. Aggiunto INC-009 in INCIDENTS.md. Aggiornato README "Setup Previsto" con passo populate_cache + nota prerequisito.
+
+### File modificati
+
+- `INCIDENTS.md`: aggiunto INC-009 (suite non verde su macchina pulita per cache Data Dragon non popolata; risolto + mitigazione documentale).
+- `README.md`: "Setup Previsto" - aggiunta riga `populate_cache()` nel blocco PowerShell + paragrafo nota prerequisito (rif. INC-009).
+- `PROMPT_LOG.md`: PLOG-2026-05-16-034 (analisi/piano/decisioni, gia appesa) + questa PLOG-2026-05-16-035.
+- `data_dragon.db`: rigenerato e popolato (gitignored, non versionato).
+- `.venv/`: creata (gitignored).
+- `app/` / `tests/` / `scripts/`: NON modificati (nessun cambio di codice).
+- `SPEC_ERRATA.md`: NON modificato. Proposta nota analoga in spec 13.2 lasciata a decisione utente (strutturale -> eventuale SPEC_ERRATA), non applicata.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -c "import asyncio; from app.data_dragon import populate_cache; print(asyncio.run(populate_cache()))"
+.\.venv\Scripts\python.exe scripts\test_data_dragon.py
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: pip check "No broken requirements"; populate_cache -> "16.10.1"; test_data_dragon exit 0; pytest "51 passed".
+
+### Decisione
+
+- Fase 0 chiusa: ambiente PC casa operativo, baseline 51/51 ripristinata, divergenza documentata (INC-009) e mitigata (README).
+- Nessun commit/push in questa iterazione (in attesa di richiesta esplicita utente).
+- Prossimo: Fase 1 (batch runtime OPEN-001) - smoke reale `ping_primary_model()` su DeepSeek, poi DoD runtime T27/T31/T35. In attesa di "ok" dell'utente per avviare la Fase 1, come da piano.
+
+## PLOG-2026-05-16-036 - Fase 1: batch runtime OPEN-001 chiuso su DeepSeek (T27/T31/T35)
+
+- Data: 2026-05-16
+- Scope: Fase 1 del piano - DoD runtime reali contro DeepSeek diretto, sbloccate dopo Gate A (.env utente).
+- Stato: completato. T27/T31/T35 DoD runtime VERDI. Nessun commit (in attesa di richiesta utente).
+
+### Messaggi catalogati
+
+- USER-092: sceglie opzione (a) - ripristino `.env.example` con `git checkout --` + via libera Fase 1.
+- CODEX-251: `git checkout -- .env.example` (placeholder ripristinato, file fuori da git status). Smoke reale `ping_primary_model()` su `deepseek-chat`: 'OK' in 1598 ms.
+- CODEX-252: DoD runtime T27 - `call_model('deepseek-chat', ...)` con "json" nel prompt: content `{"status":"OK"}`, `json.loads` SUCCESS, 1471 ms, usage 55/5.
+- CODEX-253: DoD runtime T35 - `scripts/test_sim_mode.py` (flusso reale FileProvider->build_prompt->get_suggestions_with_fallback->parse) su 5 scenari plumbing: 5/5 VALID, 0/5 UNHANDLED, exit 0. Copre anche T31 (sottoinsieme balanced_mid/mid_meta_banned/last_pick_support tutti VALID).
+- CODEX-254: verifica log RF-021: `logs/ai_calls_2026-05-16.jsonl` 5 righe, tutte outcome=success, model=deepseek-chat, json_ok=True, latenze ~1.5-3.3s.
+
+### Note tecniche
+
+- Conferma punto aperto PLOG-2026-05-15-030: DeepSeek `response_format=json_object` funziona includendo la parola "json" nel prompt; il system prompt v1.0 (prompts/system.md) gia richiede JSON, scenari sim 5/5 OK.
+- Esecuzione script CLI richiede `PYTHONPATH=.` (`scripts/` non e package): non e un bug, e l'invocazione corretta da root. Annotabile in docs setup se serve.
+- Gli scenari mock restano PLUMBING (OPEN-002): la pipeline e validata end-to-end, la QUALITA dei suggerimenti (T62 panel) e il benchmark p95 (T58) richiedono ancora i dati reali del benchmark 09/05.
+- `scripts/test_sim_mode.py` ha un docstring ora obsoleto (descrive CONTROLLED_FAILURE per OPEN-001 rate-limited, scenario decaduto post-DeepSeek): correzione minore proposta all'utente, non applicata in autonomia.
+
+### Stato DoD runtime OPEN-001
+
+- T27 DoD runtime: VERDE (call_model JSON mode su deepseek-chat).
+- T31 DoD runtime: VERDE (3/3 scenari e2e validi, sottoinsieme dei 5).
+- T35 DoD runtime parte 2: VERDE (5/5 SuggestionOutput validi, soglia era >=3/5).
+- T58 / T62 DoD runtime: ancora aperti, dipendono da OPEN-002 (dati reali benchmark non nel repo).
+
+### File modificati
+
+- `.env.example`: ripristinato a stato repo (`git checkout --`), nessuna modifica netta.
+- `PROMPT_LOG.md`: questa entry PLOG-2026-05-16-036.
+- `logs/ai_calls_2026-05-16.jsonl`: generato a runtime (gitignored).
+- `data_dragon.db`: invariato (gia popolato in Fase 0).
+- Codice `app/` / `tests/` / `scripts/`: NON modificato.
+- `INCIDENTS.md` / `SPEC_ERRATA.md` / `README.md`: NON modificati in questa iterazione.
+
+### Decisione
+
+- OPEN-001 runtime batch T27/T31/T35 chiuso su DeepSeek diretto. OPEN-001 puo essere marcato risolto per la parte runtime sbloccabile; restano T58/T62 subordinati a OPEN-002.
+- Nessun commit/push (in attesa di richiesta esplicita utente).
+- Prossimo: Fase 2 del piano - ripresa breakdown da M5/T36 (`parse_lockfile` in `app/lcu_provider.py`), stesso metodo piano->approvazione->implementazione->docs. LoL installato su questa macchina (E:\Riot Games\League of Legends) -> T40 live testabile qui piu avanti.

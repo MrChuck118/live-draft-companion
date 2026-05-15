@@ -61,9 +61,12 @@ python -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
+python -c "import asyncio; from app.data_dragon import populate_cache; asyncio.run(populate_cache())"
 ```
 
 Poi configurare `DEEPSEEK_API_KEY` in `.env` e scegliere modalita live o simulazione. La key DeepSeek va scritta solo nel file `.env` locale, mai in chat o in file versionati (vedi INC-007).
+
+Il comando `populate_cache()` scarica i dati statici da Data Dragon e crea la cache locale `data_dragon.db` (gitignored). Su una macchina pulita questo passo e prerequisito alla suite test: senza, i validator di legality falliscono con `no such table: champions` (vedi INC-009).
 
 ## Modalita Simulazione
 

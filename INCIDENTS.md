@@ -262,3 +262,29 @@ Questa correzione e subordinata ad approvazione utente: non si tocca `.env.examp
   - La sub-issue del model ID Mistral inesistente diventa nulla: i modelli OpenRouter sono stati rimossi da `.env.example`. La prevista ERRATA-006 di correzione model ID NON serve piu (il numero ERRATA-006 e stato usato per lo switch DeepSeek).
 - Residuo aperto: le DoD runtime reali (T27/T31/T35/T58/T62) restano da eseguire, ma ora contro DeepSeek, dopo che l'utente crea `.env` locale con `DEEPSEEK_API_KEY`. Non e piu un blocco da rate limit ma una semplice azione di configurazione utente.
 - Dettaglio decisione in `PROMPT_LOG.md` PLOG-2026-05-15-030.
+
+## INC-009 - Suite test non verde su macchina pulita: cache Data Dragon non popolata
+
+- Data rilevazione: 2026-05-16
+- Fase: ripresa progetto su PC casa / Fase 0 bootstrap ambiente
+- Severita: bassa (prerequisito ambiente, nessuna regressione di codice)
+- Stato: risolto + mitigazione documentale
+
+### Descrizione
+
+Su PC di casa (macchina diversa da "pc its", senza `.venv` ne cache locali), dopo bootstrap ambiente (`venv` + `pip install -r requirements.txt`, `pip check` OK) la suite ha dato 39 pass / 12 fail invece della baseline 51/51 documentata.
+
+I 12 fallimenti erano esclusivamente i validator di legality (`test_champion_legality`, `test_items_legality`, `test_keystone_legality`, 4 test ciascuno). Errore reale: `sqlite3.OperationalError: no such table: champions`. `data_dragon.db` presente ma 0 byte e gitignored (non viene dal repo): la cache Data Dragon non era mai stata popolata su questo PC.
+
+Non e una regressione: i validator T16-T18 leggono champion/item/keystone da `data_dragon.db`. La baseline 51/51 su "pc its" era valida perche T11/T12 vi erano gia stati eseguiti.
+
+### Impatto
+
+Su qualsiasi macchina pulita (incluso potenzialmente il PC Academy) la suite fallisce in modo identico finche la cache Data Dragon non viene popolata. Il README "Setup Previsto" e lo spec 13.2 non elencavano questo passo come prerequisito ai test.
+
+### Mitigazione
+
+- Rimosso `data_dragon.db` 0-byte; eseguito `populate_cache()` (scarica da Data Dragon CDN, `init_db()` incluso): patch 16.10.1.
+- Verifica `scripts/test_data_dragon.py` (T12): exit 0, 172 champions, 705 items, 17 keystones, accent/tags/no-roles check OK.
+- `pytest tests/`: 51/51 PASSED ripristinato.
+- README "Setup Previsto" aggiornato con il passo di popolamento cache Data Dragon come prerequisito ai test. Proposta di nota analoga in spec 13.2 lasciata a decisione utente (modifica strutturale -> eventuale SPEC_ERRATA, non applicata qui).
