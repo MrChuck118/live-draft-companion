@@ -4106,3 +4106,82 @@ Esito:
 - Documentazione allineata a ERRATA-006. Nessuna modifica a codice o test in questa iterazione.
 - Residui invariati: revoca key OpenRouter esposta (INC-007) e creazione `.env` con `DEEPSEEK_API_KEY` reale lato utente, poi smoke test reale `ping_primary_model()`.
 - Nessun commit/push (non richiesto).
+
+## PLOG-2026-05-15-032 - Commit/push switch DeepSeek + allineamento breakdown status + finding pytest
+
+- Data: 2026-05-15
+- Scope: committare/pushare lo switch DeepSeek + doc, allineare il breakdown status (Desktop), verificare che il cambio DeepSeek sia in ordine.
+- Stato: completato. 1 finding preesistente annotato per risoluzione utente a casa.
+
+### Messaggi catalogati
+
+- USER-082: "fai commit/push delle modifiche effettuate, dopo averlo fatto verifica di averlo fatto bene".
+- CODEX-242: commit su `main` (workflow del progetto), push `6896a39..193d3c4`. Intoppo: primo messaggio di commit corrotto da `@` parassita (sintassi PowerShell here-string usata nel tool Bash); corretto con `git commit --amend -F` (file temp, poi rimosso) PRIMA del push. Verificato: locale=remoto `193d3c4`, 7 file, `.env` gitignored, `.claude/` escluso.
+- USER-083: fornisce 4 documenti (breakdown status, breakdown_tasks v2.1, TechnicalSpec v2.3, SPEC_ERRATA v1); chiede di leggerli, controllare che il breakdown status sia aggiornato e che il cambio DeepSeek sia in ordine.
+- CODEX-243: letti i 4 doc. Breakdown status (Desktop, fuori repo) era fermo al 2026-05-14; aggiornato. Cambio DeepSeek verificato in ordine; trovato 1 finding preesistente (collisione pytest).
+- USER-084: "annota tutto nel prompt log risolvo a casa".
+
+### Commit/push (USER-082)
+
+- Commit finale: `193d3c4 feat(ai): switch AI provider OpenRouter -> DeepSeek diretto (ERRATA-006)`, su `main`, pushato su `origin/main`.
+- Lezione operativa: NON usare la sintassi here-string PowerShell (`@'...'@`) dentro il tool Bash; per messaggi multilinea usare `-F <file>`. L'amend pre-push ha evitato di pubblicare un messaggio sporco.
+- Verifica integrita: `git status -sb` allineato; `git ls-remote` == HEAD locale; 7 file attesi; `.env` gitignored (`.gitignore:157`); solo `.env.example` versionato; `.claude/` lasciato untracked.
+
+### Breakdown status allineato (USER-083)
+
+- File: `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md` (sul Desktop, NON nel repo, non versionato -> nessun commit).
+- Logica: tabelle task storiche annotate (non riscritte); sezioni forward-looking riscritte alla verita corrente.
+- Modifiche: header (commit 48aa1a3 -> 193d3c4, stato locale riscritto); nuova sezione "Aggiornamento 2026-05-15"; OPEN-001 RIVISTA -> largamente risolto; INC-007 annotato, INC-008 RISOLTO; Note operative (`.env.example` MODIFICATO, ERRATA-006 non piu standby); "Come riprendere"/"Per continuare" (DEEPSEEK_API_KEY, punto 3 da M3/T23 obsoleto -> M5/T36); riga T26 e "Verifiche finali OpenRouter" annotate come superate/snapshot.
+
+### Verifica cambio DeepSeek (USER-083): in ordine
+
+- `app/ai_client.py`: `_BASE_URL=https://api.deepseek.com`, key `DEEPSEEK_API_KEY`; nessun riferimento OpenRouter residuo in `app/`.
+- `pytest tests/` -> 51/51 PASSED (invocazione documentata).
+- Git: `main` == `origin/main`, HEAD `193d3c4`, working tree pulito (solo `.claude/`).
+
+### FINDING preesistente da risolvere a casa (USER-084)
+
+- Sintomo: `pytest` nudo dalla root della repo -> `ERROR collecting tests/test_sim_mode.py` ("import file mismatch": `scripts/test_sim_mode.py` shadowa `tests/test_sim_mode.py`).
+- Causa: due file con basename `test_sim_mode.py` (uno in `scripts/`, uno in `tests/`), senza `__init__.py`/`conftest.py`; pytest in import-mode default collide sui nomi modulo. `scripts/test_sim_mode.py` viene raccolto perche il basename inizia con `test_`.
+- NON e una regressione del cambio DeepSeek: introdotto col commit `6896a39` (T30-T35); il commit DeepSeek `193d3c4` non tocca i file `*sim_mode*`.
+- Workaround attuale: usare l'invocazione documentata `pytest tests/` (51/51 PASSED). Il bare `pytest` non e l'invocazione di progetto.
+- Opzioni di fix (a scelta utente, da fare a casa, non bloccante):
+  1. Rinominare `scripts/test_sim_mode.py` in nome non `test_*` (es. `scripts/sim_mode_check.py`) + aggiornare l'import in `tests/test_sim_mode.py` (importlib by path) e i riferimenti in docs.
+  2. Aggiungere `tests/__init__.py` + `scripts/__init__.py` (o `conftest.py` con `rootdir`) e/o impostare `--import-mode=importlib` in `pytest.ini`.
+  3. Configurare `[tool.pytest.ini_options] testpaths = ["tests"]` per non raccogliere mai `scripts/`.
+- Raccomandazione: opzione 1 (lo script non e un test ma un'utility CLI; il basename `test_` e fuorviante) oppure opzione 3 (la piu rapida e a basso rischio). Annotato anche nel breakdown status (sezione "Aggiornamento 2026-05-15").
+
+### Decisione
+
+- Switch DeepSeek confermato in ordine lato codice/test/git. Breakdown status allineato.
+- Finding pytest registrato qui e nel breakdown status; risoluzione delegata all'utente ("risolvo a casa"), non bloccante per il proseguimento (M5/T36).
+- Azioni utente residue invariate: revocare key OpenRouter esposta (INC-007); creare `.env` con `DEEPSEEK_API_KEY` reale; poi smoke test reale DeepSeek.
+- Nessun commit/push in questa iterazione (questa entry e un aggiornamento doc locale di processo; commit del prossimo blocco di lavoro quando richiesto).
+
+## PLOG-2026-05-15-033 - Handoff Claude token limit e verifica prompt log
+
+- Data: 2026-05-15
+- Scope: leggere il `PROMPT_LOG.md` reale e la chat Claude incollata dall'utente; capire se il prompt log era gia aggiornato dopo il token limit; aggiornarlo postumamente con questa ripresa.
+- Stato: completato.
+
+### Messaggi catalogati
+
+- USER-085: incolla la chat con Claude fino al token limit e chiede di leggere tutto il prompt log, poi la chat, per capire se il prompt log sia aggiornato; chiede anche di aggiornarlo postumamente con la nuova interazione.
+- CODEX-244: legge il `PROMPT_LOG.md` su disco, cerca le entry recenti e confronta la coda del file con la chat incollata; verifica lo stato git locale.
+
+### Esito verifica
+
+- Il prompt log era gia aggiornato fino a `PLOG-2026-05-15-032`, cioe includeva:
+  - commit/push finale `193d3c4` dello switch OpenRouter -> DeepSeek diretto;
+  - allineamento del breakdown status Desktop;
+  - verifica DeepSeek (`pytest tests/` 51/51 PASS);
+  - finding preesistente `pytest` nudo vs collisione `scripts/test_sim_mode.py` / `tests/test_sim_mode.py`;
+  - decisione utente di risolvere il finding a casa.
+- Stato git rilevato: `PROMPT_LOG.md` modificato e non ancora committato; `.claude/` ancora untracked. Il diff mostrava solo l'aggiunta di `PLOG-2026-05-15-032` prima di questa entry.
+- Questa entry `PLOG-2026-05-15-033` registra il passaggio post-token-limit e rende esplicito che il log era aggiornato sul disco, ma non ancora committato.
+
+### Decisione
+
+- Nessuna modifica a codice o configurazione.
+- Nessuna verifica test necessaria: lavoro solo documentale/processo.
+- Prossimo passo operativo possibile: committare `PROMPT_LOG.md` quando l'utente lo chiede, lasciando `.claude/` fuori dal commit.
