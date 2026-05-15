@@ -3388,3 +3388,635 @@ DoD T29 verificato:
 
 - M3/T29 puo considerarsi completato.
 - Prossimo task da proporre: M3/T30 logging JSONL delle chiamate AI in `logs/ai_calls_YYYY-MM-DD.jsonl` con timestamp, model_used, prompt hash, latency_ms, usage (token), cost, json_ok, validation_results, retry_count.
+
+## PLOG-2026-05-14-016 - Piano M3/T30 logging JSONL
+
+- Data: 2026-05-14
+- Scope: pianificare M3/T30 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-063: chiede di procedere con la prossima task dopo commit/push di T23-T29, stesso metodo, ribadisce paletti.
+- CODEX-205: espone piano stretto per T30: estendere `app/ai_client.py` con costante `_LOGS_DIR` monkeypatchabile, helper `_prompt_hash`, `_ai_call_record`, `_log_ai_call`; logging per-chiamata integrato in `_try_model` su ogni ramo (rate_limited, timeout, api_error, validation_failed, success).
+- CODEX-206: decisione critica su campo `cost`: OpenRouter non restituisce il costo nella response ChatCompletion standard; scelta `cost: null` documentata, niente tabella pricing inventata, niente chiamata extra a /generation endpoint (over-engineering); per i free tier di Strategia A il costo reale e $0.00 (coerente spec §7.4).
+- CODEX-207: decisione su isolamento test: fixture `autouse` che redirige `_LOGS_DIR` a `tmp_path` per evitare che i 9 test T28/T29 esistenti sporchino `logs/` reale.
+- USER-064: approva il piano con "Approvo, procedi" (opzione 1: niente commit/push automatico).
+
+### Stato verificato pre-implementazione
+
+- `app/ai_client.py` con T26-T29 (get_client, ping_primary_model, call_model, _sleep, _chain_from_env, _try_model, get_suggestions_with_fallback).
+- `tests/test_ai_client.py` con 9 test PASSED (6 T28 + 3 T29).
+- `.gitignore` ignora `logs/` (i file log non vengono versionati).
+- Branch `main` allineato a `origin/main` su `3ca73c8` (commit T23-T29 pushato).
+
+### Decisioni di design dichiarate nel piano
+
+- Logging per-chiamata: ogni invocazione di `call_model` in `_try_model` produce 1 riga JSONL (anche i fallimenti).
+- File giornaliero `logs/ai_calls_YYYY-MM-DD.jsonl` con data odierna via `datetime.now().strftime`.
+- `prompt_hash`: sha256(system+user) troncato a 16 hex char; nessun contenuto del prompt/draft loggato (privacy by design spec §10.1).
+- `cost: null` documentato (no pricing inventato, no chiamata /generation).
+- `usage` letto da `response.usage` se presente, altrimenti `None`.
+- `retry_count`: contatore 429 (`rate_limit_retries`) al momento della chiamata; validation retry riflesso in `validation_results`.
+- `_LOGS_DIR` module-level monkeypatchabile.
+- `_log_ai_call` fa `mkdir(parents=True, exist_ok=True)` prima di scrivere; append mode, encoding utf-8, `ensure_ascii=False`.
+- Fixture `isolate_logs` autouse in test per redirigere `_LOGS_DIR` a tmp_path.
+- `_fake_response` aggiornato con `usage.prompt_tokens`/`completion_tokens` interi (MagicMock raw non e JSON-serializzabile).
+
+### Decisioni documentali
+
+- README aggiornato dopo l'implementazione: T30 fatto, prossimo M3/T31.
+- INCIDENTS non aggiornato.
+- SPEC_ERRATA non aggiornato.
+- Desktop breakdown status aggiornato.
+- PROMPT_LOG aggiornato con questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-017 - M3/T30 logging JSONL (integrazione + 1 test DoD)
+
+- Data: 2026-05-14
+- Scope: implementare solo M3/T30 dopo approvazione del piano.
+- Stato: T30 completato e verificato; suite 38/38 PASSED.
+
+### Messaggi catalogati
+
+- CODEX-208: estende import di `app/ai_client.py` (`hashlib`, `json`, `datetime`, `Path`); aggiunge `_LOGS_DIR`.
+- CODEX-209: aggiunge helper `_prompt_hash`, `_ai_call_record` (con `cost: None` centralizzato + timestamp ISO), `_log_ai_call` (append JSONL daily file).
+- CODEX-210: integra `_log_ai_call(_ai_call_record(...))` in tutti i 5 rami di `_try_model` (rate_limited, timeout, api_error, validation_failed x2, success); latenza misurata con `time.perf_counter()` attorno a ogni `call_model`.
+- CODEX-211: corregge `_fake_response` nei test impostando `usage.prompt_tokens=120` e `completion_tokens=85` perche la MagicMock raw non e JSON-serializzabile dentro `_log_ai_call`.
+- CODEX-212: aggiunge fixture `isolate_logs` autouse (redirige `_LOGS_DIR` a tmp_path) e test DoD `test_logging_three_calls_produce_three_jsonl_lines`.
+- CODEX-213: pytest full suite 38/38 PASSED in 2.59s; verifica `logs/` reale contiene solo `.gitkeep` (nessuna pollution).
+
+### File modificati
+
+- `app/ai_client.py`:
+  - module docstring aggiornato a `M3/T26-T30`.
+  - import esteso: `hashlib`, `json`, `datetime`, `pathlib.Path`.
+  - costante `_LOGS_DIR = Path(__file__).resolve().parent.parent / "logs"`.
+  - helper `_prompt_hash(system, user) -> str`: sha256 troncato 16 char.
+  - helper `_ai_call_record(...)`: costruisce record con timestamp ISO + `cost: None`.
+  - helper `_log_ai_call(record)`: mkdir + append JSONL su `ai_calls_YYYY-MM-DD.jsonl`.
+  - `_try_model` integrato con logging su tutti i 5 rami; latenza per-chiamata via `time.perf_counter()`.
+  - T26-T29 logica funzionale invariata.
+- `tests/test_ai_client.py`:
+  - import `datetime`.
+  - `_fake_response` con `usage.prompt_tokens=120`, `completion_tokens=85`.
+  - fixture `isolate_logs` autouse (redirige `_LOGS_DIR` a tmp_path).
+  - nuovo test `test_logging_three_calls_produce_three_jsonl_lines` (10° test del modulo).
+- `README.md`:
+  - stato aggiornato a M3/T30 completato.
+  - prossimo task tecnico aggiornato a M3/T31.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T30 segnato come fatto.
+  - prossimo task aggiornato a T31.
+- `PROMPT_LOG.md`:
+  - aggiunte PLOG-2026-05-14-016 (Piano) e PLOG-2026-05-14-017 (Implementation).
+- `INCIDENTS.md`:
+  - non aggiornato.
+- `SPEC_ERRATA.md`:
+  - non aggiornato.
+
+### Verifiche eseguite
+
+Compile:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\ai_client.py
+```
+
+- Exit code: 0.
+
+Full suite + DoD:
+
+```text
+38 passed in 2.59s
+tests/test_ai_client.py::test_logging_three_calls_produce_three_jsonl_lines PASSED
+```
+
+Verifica non-pollution:
+
+```text
+logs/ reale: solo .gitkeep (i log dei test vanno in tmp_path via fixture isolate_logs)
+git status: M app/ai_client.py, M tests/test_ai_client.py (no log file tracciati)
+```
+
+DoD T30 - dopo 3 chiamate il file contiene 3 righe JSONL parsabili:
+
+- `test_logging_three_calls_produce_three_jsonl_lines`: 3 chiamate `get_suggestions_with_fallback`, file `ai_calls_<oggi>.jsonl` con 3 righe; ogni riga `json.loads()` OK; campi richiesti presenti (timestamp, model_used, prompt_hash, latency_ms, usage, cost, json_ok, validation_results, retry_count); `outcome=success`, `cost=None`, `usage={prompt_tokens:120, completion_tokens:85}`. PASSED.
+
+### Decisione
+
+- M3/T30 puo considerarsi completato.
+- Limitazione documentata: campo `cost` sempre `null` finche non si implementa l'arricchimento via OpenRouter /generation endpoint (eventuale task futuro, non scope MVP; per Strategia A free il costo reale e $0.00).
+- Prossimo task da proporre: M3/T31 test ai_client end-to-end con i 3 scenari `balanced_mid`, `mid_meta_banned`, `last_pick_support` (flusso completo prompt -> call -> validate -> log). NOTA: T31 richiede chiamate AI reali; e impattato da OPEN-001 (chain Strategia A rate-limited). Da valutare nel piano T31 se eseguibile ora o se rinviato come T27 DoD runtime.
+
+## PLOG-2026-05-14-018 - Decisione utente: OPEN-001 rinviato, si prosegue con task non-AI
+
+- Data: 2026-05-14
+- Scope: registrare la decisione utente di rinviare la risoluzione del modello AI e proseguire.
+- Stato: applicata.
+
+### Messaggi catalogati
+
+- USER-065: chiede se siamo bloccati senza un modello AI corretto.
+- CODEX-214: risponde che NON e un blocco strutturale; solo 4-5 task (T27 DoD, T31, T35, T58, T62) richiedono chiamata AI reale; il restante ~90% del breakdown procede con test mock; raccomanda di continuare a costruire e fare le verifiche runtime in batch quando il modello sara pronto.
+- USER-066: comunica che trovare/usare un modello richiede tempo e soldi (costo a carico utente), non risolvibile adesso; chiede di marcare bene il punto nel breakdown status come "da svolgere successivamente" e di proseguire con le task successive.
+- CODEX-215: rafforza OPEN-001 nel Desktop breakdown status con la decisione utente esplicita, l'elenco delle 5 verifiche runtime rinviate in batch, e la strategia "procedi con mock". Registra questa entry nel PROMPT_LOG. Prossimo: piano T31 mock-based con DoD reale rinviata.
+
+### Decisione applicata
+
+- OPEN-001 aggiornato a stato "APERTO - RINVIATO A DOPO, in carico utente" con decisione utente datata 2026-05-14.
+- Elenco esplicito delle 5 verifiche runtime AI rinviate in batch: T27, T31, T35, T58, T62.
+- Strategia confermata: implementare le task AI-dipendenti in mock per la logica, verifica reale in batch quando il modello sara pronto.
+- `.env.example`, `.env`, `SPEC_ERRATA.md` invariati (ERRATA-006 resta in standby finche utente non investiga il model ID).
+- Si prosegue con M3/T31 in modalita mock-based, DoD chiamata reale rinviata a OPEN-001.
+
+### Decisione documentale
+
+- Desktop breakdown status: OPEN-001 rafforzato.
+- README: gia riflette lo stato (T31 impattato da OPEN-001).
+- INCIDENTS/SPEC_ERRATA: non aggiornati.
+- PROMPT_LOG: questa entry.
+
+## PLOG-2026-05-14-019 - Piano M3/T31 test e2e 3 scenari
+
+- Data: 2026-05-14
+- Scope: pianificare M3/T31 senza implementare prima dell'approvazione.
+- Stato: piano approvato (fixture plumbing).
+
+### Messaggi catalogati
+
+- USER-067: dopo decisione OPEN-001 rinviato, chiede di proseguire con le task successive.
+- CODEX-216: ricerca dati scenario benchmark nel repo: `tests/mock_drafts/` ha solo `.gitkeep`, nessun `test_scenarios.md`, nessun dato `balanced_mid/mid_meta_banned/last_pick_support`.
+- CODEX-217: espone piano stretto T31: 3 test e2e in `tests/test_ai_client.py` (flusso build_prompt -> get_suggestions_with_fallback mockata -> validate -> log -> parse SuggestionOutput); 3 DraftState come fixture di plumbing, NON dati benchmark reali; DoD chiamata reale rinviata a OPEN-001 batch.
+- CODEX-218: chiede se l'utente ha `test_scenarios.md` per dati reali o se procedere con fixture plumbing.
+- USER-068: sceglie "Fixture plumbing, procedi".
+
+### Stato verificato pre-implementazione
+
+- `app/prompt_builder.py` (T25), `app/ai_client.py` (T26-T30), `app/models.py` (T13-T14) disponibili.
+- `tests/test_ai_client.py` con 10 test PASSED + fixture `env_chain`, `isolate_logs`, `fast_sleep`.
+- Nessun dato scenario reale nel repo (confermato via find/grep).
+- Branch `main` su `3ca73c8`; T30 + decisione OPEN-001 in locale non committati.
+
+### Decisioni di design dichiarate nel piano
+
+- 3 test e2e mock-based in `tests/test_ai_client.py` (coerente con T28-T30).
+- 3 helper `_draft_balanced_mid`, `_draft_mid_meta_banned`, `_draft_last_pick_support` come fixture DraftState minime.
+- Helper `_run_e2e(draft, isolate_logs)` per il flusso comune.
+- Fixture documentate esplicitamente come PLUMBING, non benchmark reale; dati reali = scope T34/T57.
+- DoD chiamata reale rinviata a OPEN-001 in batch con T27/T35/T58/T62.
+- `champion_data={}` (coerente con T25).
+
+### Decisioni documentali
+
+- README aggiornato dopo l'implementazione: T31 fatto (mock, DoD reale rinviata), M3 chiuso lato codice, prossimo M4/T32.
+- INCIDENTS/SPEC_ERRATA non aggiornati.
+- Desktop breakdown status aggiornato.
+- PROMPT_LOG aggiornato con questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-020 - M3/T31 test e2e 3 scenari (M3 chiuso lato codice)
+
+- Data: 2026-05-14
+- Scope: implementare solo M3/T31 dopo approvazione del piano.
+- Stato: T31 completato (mock); suite 41/41 PASSED; M3 chiuso lato codice.
+
+### Messaggi catalogati
+
+- CODEX-219: aggiunge import `ChampionPick`, `DraftState`, `SuggestionOutput`, `build_prompt` a `tests/test_ai_client.py`.
+- CODEX-220: aggiunge blocco M3/T31 con commento esplicito "fixture PLUMBING non benchmark reale", 3 helper DraftState, helper `_run_e2e`, 3 test e2e.
+- CODEX-221: pytest full suite 41/41 PASSED in 1.83s; 3/3 test T31 PASSED; `logs/` reale intatto (solo .gitkeep); nessun leak .env/log in git.
+
+### File modificati
+
+- `tests/test_ai_client.py`:
+  - import esteso: `from app.models import ChampionPick, DraftState, SuggestionOutput`, `from app.prompt_builder import build_prompt`.
+  - blocco M3/T31 con commento sul significato "plumbing".
+  - 3 helper fixture: `_draft_balanced_mid`, `_draft_mid_meta_banned`, `_draft_last_pick_support`.
+  - helper `_run_e2e(draft, isolate_logs)`: build_prompt -> get_suggestions_with_fallback (mocked) -> parse SuggestionOutput -> verifica log scritto con outcome success.
+  - 3 test: `test_e2e_balanced_mid`, `test_e2e_mid_meta_banned`, `test_e2e_last_pick_support`.
+- `README.md`:
+  - stato aggiornato a M3 chiuso lato codice (T23-T31), prossimo M4/T32.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T31 segnato come fatto (mock, DoD reale rinviata).
+  - M3 chiuso lato codice.
+  - prossimo task M4/T32.
+- `PROMPT_LOG.md`:
+  - aggiunte PLOG-2026-05-14-019 (Piano) e PLOG-2026-05-14-020 (Implementation).
+- `INCIDENTS.md` / `SPEC_ERRATA.md`:
+  - non aggiornati.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ -v
+```
+
+Esito:
+
+```text
+41 passed in 1.83s
+tests/test_ai_client.py::test_e2e_balanced_mid PASSED
+tests/test_ai_client.py::test_e2e_mid_meta_banned PASSED
+tests/test_ai_client.py::test_e2e_last_pick_support PASSED
+```
+
+- 41 test totali: 13 ai_client (6 T28 + 3 T29 + 1 T30 + 3 T31) + 28 validators.
+- `logs/` reale: solo `.gitkeep` (fixture isolate_logs funziona).
+- Nessun leak `.env`/log in git.
+
+DoD T31 - 3/3 scenari producono SuggestionOutput valido, logs scritti correttamente:
+
+- Mock-based: 3/3 test PASSED; flusso build_prompt -> get_suggestions_with_fallback -> validate -> log corretto per balanced_mid, mid_meta_banned, last_pick_support.
+- Ogni test verifica: prompt costruito (user_role nel prompt), SuggestionOutput con 3 suggestions parsato, log JSONL scritto con outcome=success.
+- DoD chiamata AI reale: RINVIATA a OPEN-001 in batch con T27/T35/T58/T62 (decisione utente 2026-05-14).
+
+### Decisione
+
+- M3/T31 completato lato codice (mock).
+- M3 (Prompt Builder + AI Client con chain, T23-T31) CHIUSO lato codice. DoD runtime di T27 e T31 rinviate in batch a OPEN-001.
+- Prossimo task da proporre: M4/T32 interfaccia astratta `DraftStateProvider` in `app/draft_state_provider.py` con metodo `async get_current_state() -> DraftState`.
+
+## PLOG-2026-05-14-021 - Piano M4/T32 DraftStateProvider
+
+- Data: 2026-05-14
+- Scope: pianificare M4/T32 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-069: "procedi".
+- CODEX-222: espone piano stretto T32: un solo file `app/draft_state_provider.py` con classe ABC astratta `DraftStateProvider` + `@abstractmethod async get_current_state(self) -> DraftState`; niente FileProvider/LCUProvider; verifica DoD inline (import/abstract/sottoclasse); niente pytest (DoD breakdown chiede solo "importabile + ereditabile").
+- USER-070: approva con "Approvo, procedi" (niente commit/push).
+
+### Stato verificato pre-implementazione
+
+- `app/models.py` con `DraftState` (T13) disponibile.
+- Branch `main` su `3ca73c8`; T30-T31 + decisione OPEN-001 in locale non committati.
+- M3 chiuso lato codice (41/41 suite).
+
+### Decisioni di design dichiarate nel piano
+
+- `abc.ABC` + `@abstractmethod` su `async def get_current_state`.
+- Metodo async (coerente con breakdown + futuro LCUProvider httpx async).
+- Nessun `__init__` astratto: contratto solo su `get_current_state`.
+- Dipendenza unidirezionale `draft_state_provider -> models` (no circular).
+
+### Decisioni documentali
+
+- README: M4 in corso, T32 fatto, prossimo M4/T33.
+- INCIDENTS/SPEC_ERRATA non aggiornati.
+- Desktop status aggiornato.
+- PROMPT_LOG: questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-022 - M4/T32 DraftStateProvider
+
+- Data: 2026-05-14
+- Scope: implementare solo M4/T32 dopo approvazione.
+- Stato: T32 completato e verificato; suite 41/41 PASSED (no regressione).
+
+### Messaggi catalogati
+
+- CODEX-223: crea `app/draft_state_provider.py` con ABC astratta + async abstractmethod.
+- CODEX-224: compile OK; DoD inline 3/3 (importabile, istanziazione diretta -> TypeError, sottoclasse concreta istanziabile e get_current_state ritorna DraftState); regression suite 41/41 PASSED.
+
+### File modificati
+
+- `app/draft_state_provider.py`:
+  - nuovo file, classe `DraftStateProvider(ABC)` con `@abstractmethod async def get_current_state(self) -> DraftState`.
+- `README.md`:
+  - M4 in corso, T32 fatto, prossimo M4/T33.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T32 fatto, M4 in corso, prossimo T33.
+- `PROMPT_LOG.md`:
+  - PLOG-2026-05-14-021 (Piano) + 022 (Impl).
+- `INCIDENTS.md` / `SPEC_ERRATA.md`: non aggiornati.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\draft_state_provider.py
+```
+
+- Exit code: 0.
+
+DoD T32 - classe importabile, può essere ereditata:
+
+```text
+Test1 importabile: True
+Test2 abstract: OK (TypeError: Can't instantiate abstract class DraftStateProvider without ...)
+Test3 sottoclasse istanziabile + get_current_state: True MID
+```
+
+Regression:
+
+```text
+41 passed in 1.74s
+```
+
+### Decisione
+
+- M4/T32 completato.
+- Prossimo task da proporre: M4/T33 `FileProvider(DraftStateProvider)` in `app/file_provider.py` che carica draft state da file JSON specificato in config; DoD: `FileProvider("tests/mock_drafts/balanced_mid.json").get_current_state()` restituisce DraftState valido.
+
+## PLOG-2026-05-14-023 - Piano M4/T33 FileProvider
+
+- Data: 2026-05-14
+- Scope: pianificare M4/T33 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-071: "procedi".
+- CODEX-225: segnala ordering: DoD T33 cita `tests/mock_drafts/balanced_mid.json` che non esiste (creato in T34); propone verifica con `tmp_path` pytest, file reale scope T34.
+- CODEX-226: espone piano stretto T33: `app/file_provider.py` con `FileProvider(DraftStateProvider)`, `__init__(file_path)`, `get_current_state` async che legge UTF-8 + `DraftState.model_validate_json`; no error handling extra (scope T49b); `tests/test_file_provider.py` con test tmp_path valido + schema-invalido.
+- USER-072: approva con "Approvo, procedi" (niente commit/push).
+
+### Stato verificato pre-implementazione
+
+- `app/draft_state_provider.py` (T32) con ABC astratta disponibile.
+- `app/models.py` `DraftState` (T13) con `champion: str | None`.
+- pytest-asyncio 1.3.0 STRICT (richiede `@pytest.mark.asyncio`).
+- Branch `main` su `3ca73c8`; T30-T32 + OPEN-001 in locale non committati.
+
+### Decisioni di design dichiarate nel piano
+
+- `FileProvider(DraftStateProvider)` sottoclasse concreta.
+- `get_current_state` async (contratto T32) con read sync interno (no aiofiles, over-engineering MVP).
+- Parsing via `DraftState.model_validate_json` (Pydantic v2, ValidationError su schema invalido).
+- Nessun error handling file mancante/corrotto: scope MVP-013/T49b.
+- Config path passato al costruttore; wiring da `.env DRAFT_PROVIDER_FILE` e scope T41/T44.
+- Test con `tmp_path`; `balanced_mid.json` reale e scope T34 (ordering documentato).
+
+### Decisioni documentali
+
+- README: T33 fatto, prossimo M4/T34.
+- INCIDENTS/SPEC_ERRATA non aggiornati.
+- Desktop status aggiornato.
+- PROMPT_LOG: questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-024 - M4/T33 FileProvider
+
+- Data: 2026-05-14
+- Scope: implementare solo M4/T33 dopo approvazione.
+- Stato: T33 completato e verificato; suite 44/44 PASSED.
+
+### Messaggi catalogati
+
+- CODEX-227: crea `app/file_provider.py` con `FileProvider(DraftStateProvider)`.
+- CODEX-228: crea `tests/test_file_provider.py` con 3 test (tmp_path valido, str path, schema-invalido -> ValidationError).
+- CODEX-229: compile OK; 3/3 T33 PASSED; full suite 44/44 PASSED (41 + 3).
+
+### File modificati
+
+- `app/file_provider.py`:
+  - nuovo file; `FileProvider(DraftStateProvider)` con `__init__(file_path: str | Path)` e `async get_current_state() -> DraftState` (read UTF-8 + `DraftState.model_validate_json`).
+- `tests/test_file_provider.py`:
+  - nuovo file; 3 test `@pytest.mark.asyncio`: valid draft via tmp_path, str path accettato, schema-invalido -> ValidationError.
+- `README.md`:
+  - T33 fatto, prossimo M4/T34.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T33 fatto, prossimo T34; file aggiunti all'elenco.
+- `PROMPT_LOG.md`:
+  - PLOG-2026-05-14-023 (Piano) + 024 (Impl).
+- `INCIDENTS.md` / `SPEC_ERRATA.md`: non aggiornati.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\file_provider.py
+.\.venv\Scripts\python.exe -m pytest tests/test_file_provider.py -v
+.\.venv\Scripts\python.exe -m pytest tests/
+```
+
+Esito:
+
+```text
+tests/test_file_provider.py::test_file_provider_loads_valid_draft PASSED
+tests/test_file_provider.py::test_file_provider_accepts_str_path PASSED
+tests/test_file_provider.py::test_file_provider_invalid_schema_raises PASSED
+3 passed in 0.22s
+44 passed in 1.76s
+```
+
+DoD T33 - `FileProvider(...).get_current_state()` restituisce DraftState valido:
+
+- Verificato con file `tmp_path/balanced_mid.json` (DraftState serializzato via model_dump_json): get_current_state() ritorna DraftState con user_role=MID, patch=16.10.1, bans/enemy_team/ally_team coerenti, champion None gestito.
+- DoD letterale su `tests/mock_drafts/balanced_mid.json`: il file reale e scope T34; la verifica si ripetera su quel file dopo T34.
+
+### Decisione
+
+- M4/T33 completato.
+- Prossimo task da proporre: M4/T34 mock draft JSON (5 scenari iniziali) in `tests/mock_drafts/`: `balanced_mid`, `ad_heavy_top`, `mid_meta_banned`, `first_pick_top`, `last_pick_support`. NOTA: i contenuti reali del benchmark 09/05 (`test_scenarios.md`) non sono nel repo; da valutare nel piano T34 se costruire scenari plumbing documentati o se l'utente fornisce i dati.
+
+## PLOG-2026-05-14-025 - Registrazione OPEN-002 dati benchmark + richiesta utente
+
+- Data: 2026-05-14
+- Scope: registrare la richiesta utente di documentare bene il problema dei dati benchmark prima di procedere con T34.
+- Stato: applicata.
+
+### Messaggi catalogati
+
+- USER-073: prima di procedere chiede di segnare bene sul breakdown status la questione dei benchmark, cosi che possa aggiungere i dati reali "appena arrivo a casa"; poi procedere; ricorda i paletti.
+- CODEX-230: crea OPEN-002 nel Desktop breakdown status (problema, scenari interessati, cosa deve fare l'utente da casa, come si procede con plumbing nel frattempo, impatto, note operative su tests/mock_drafts); aggiorna README open issues con OPEN-002; registra questa entry; prossimo: piano T34.
+
+### Decisione applicata
+
+- OPEN-002 creato in Desktop breakdown status: dati scenario benchmark 09/05 (`test_scenarios.md`) NON nel repo, in carico utente da casa.
+- Scenari interessati documentati: 5 (T34) + 15 (T57).
+- Strategia interim: T34 crea JSON plumbing strutturalmente validi e coerenti col nome scenario, sostituibili in-place quando l'utente fornisce i dati reali (path/nome file stabili, codice invariato).
+- README open issues aggiornato con OPEN-001 + OPEN-002.
+- INCIDENTS/SPEC_ERRATA non aggiornati (non sono incidenti/errata, sono open issue operative tracciate nel breakdown status come OPEN-001/002).
+
+### Decisione documentale
+
+- Desktop breakdown status: OPEN-002 aggiunto.
+- README: open issues aggiornate.
+- PROMPT_LOG: questa entry prima del piano T34.
+
+## PLOG-2026-05-14-026 - Piano M4/T34 mock draft JSON
+
+- Data: 2026-05-14
+- Scope: pianificare M4/T34 senza implementare prima dell'approvazione.
+- Stato: piano approvato (con README di tracciabilita).
+
+### Messaggi catalogati
+
+- USER-074: chiede di documentare bene OPEN-002 prima di procedere, poi proseguire, ricorda paletti.
+- CODEX-231: documenta OPEN-002; espone piano T34: 5 JSON plumbing in `tests/mock_drafts/` generati schema-validi, coerenti col nome scenario, champion reali Data Dragon; + `tests/mock_drafts/README.md` di tracciabilita; test parametrizzato 5 file via FileProvider.
+- USER-075: sceglie "Approvo, con README".
+
+### Stato verificato pre-implementazione
+
+- `app/file_provider.py` (T33) + `app/draft_state_provider.py` (T32) disponibili.
+- `tests/mock_drafts/` contiene solo `.gitkeep` (dir tracciato).
+- `test_scenarios.md` reale NON disponibile (OPEN-002).
+- Suite 44/44 pre-T34.
+
+### Decisioni di design dichiarate nel piano
+
+- 5 JSON: balanced_mid, ad_heavy_top, mid_meta_banned, first_pick_top, last_pick_support.
+- Scenari PLUMBING dichiarati (OPEN-002), sostituibili in-place coi dati reali (path/nome stabili).
+- balanced_mid / mid_meta_banned / last_pick_support coerenti con le fixture gia usate in test_e2e (T31).
+- ad_heavy_top: enemy AD-heavy (Renekton/Lee Sin/Talon/Jhin/Pyke).
+- first_pick_top: enemy vuoto, ally tutti None, user TOP.
+- File versionati (test fixtures, non gitignored).
+- `tests/mock_drafts/README.md` per tracciabilita OPEN-002.
+- Test parametrizzato in `tests/test_file_provider.py`.
+
+### Decisioni documentali
+
+- README: T34 fatto, prossimo M4/T35.
+- INCIDENTS/SPEC_ERRATA non aggiornati.
+- Desktop status aggiornato.
+- PROMPT_LOG: questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-027 - M4/T34 mock draft JSON (5 scenari plumbing)
+
+- Data: 2026-05-14
+- Scope: implementare solo M4/T34 dopo approvazione.
+- Stato: T34 completato e verificato; suite 49/49 PASSED.
+
+### Messaggi catalogati
+
+- CODEX-232: crea 5 JSON in `tests/mock_drafts/` (balanced_mid, ad_heavy_top, mid_meta_banned, first_pick_top, last_pick_support) + `tests/mock_drafts/README.md` tracciabilita OPEN-002.
+- CODEX-233: aggiunge test parametrizzato `test_mock_draft_loads_with_fileprovider` (5 file) a `tests/test_file_provider.py`.
+- CODEX-234: 8/8 test_file_provider PASSED (3 T33 + 5 T34); full suite 49/49 PASSED; i 5 JSON caricano via FileProvider reale (soddisfa anche DoD letterale T33 su balanced_mid.json).
+
+### File modificati
+
+- `tests/mock_drafts/balanced_mid.json`, `ad_heavy_top.json`, `mid_meta_banned.json`, `first_pick_top.json`, `last_pick_support.json`:
+  - nuovi; DraftState schema-validi; champion reali Data Dragon; scenari PLUMBING (OPEN-002).
+- `tests/mock_drafts/README.md`:
+  - nuovo; marca i JSON come plumbing, istruzioni di sostituzione coi dati reali, ref OPEN-002.
+- `tests/test_file_provider.py`:
+  - aggiunto test parametrizzato sui 5 mock draft via FileProvider.
+- `README.md`:
+  - T34 fatto, prossimo M4/T35.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T34 fatto (plumbing, OPEN-002), prossimo T35; file in elenco.
+- `PROMPT_LOG.md`:
+  - PLOG-2026-05-14-026 (Piano) + 027 (Impl).
+- `INCIDENTS.md` / `SPEC_ERRATA.md`: non aggiornati.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_file_provider.py -v
+.\.venv\Scripts\python.exe -m pytest tests/
+```
+
+Esito:
+
+```text
+tests/test_file_provider.py ... 8 passed in 0.21s
+  test_mock_draft_loads_with_fileprovider[balanced_mid] PASSED
+  test_mock_draft_loads_with_fileprovider[ad_heavy_top] PASSED
+  test_mock_draft_loads_with_fileprovider[mid_meta_banned] PASSED
+  test_mock_draft_loads_with_fileprovider[first_pick_top] PASSED
+  test_mock_draft_loads_with_fileprovider[last_pick_support] PASSED
+49 passed in 1.82s
+```
+
+DoD T34 - 5 file .json presenti, ognuno caricabile con FileProvider:
+
+- 5 file creati in `tests/mock_drafts/`.
+- Test parametrizzato: ogni file caricato con `FileProvider(...).get_current_state()` -> `DraftState` valido (patch 16.10.1, user_role valido).
+- Soddisfa retroattivamente anche la DoD letterale T33 (`FileProvider("tests/mock_drafts/balanced_mid.json")`).
+- NOTA OPEN-002: scenari plumbing, non dati benchmark reali; sostituibili in-place quando l'utente porta `test_scenarios.md`.
+
+### Decisione
+
+- M4/T34 completato (plumbing; dati reali in OPEN-002).
+- Prossimo task da proporre: M4/T35 `scripts/test_sim_mode.py`: flusso FileProvider -> PromptBuilder -> AIClient (chain) -> validators -> output finale per i 5 scenari. NOTA: parte AI reale impattata da OPEN-001 (chain rate-limited) -> da valutare nel piano se mock o rinviata in batch.
+
+## PLOG-2026-05-14-028 - Piano M4/T35 sim mode script
+
+- Data: 2026-05-14
+- Scope: pianificare M4/T35 senza implementare prima dell'approvazione.
+- Stato: piano approvato.
+
+### Messaggi catalogati
+
+- USER-076: "procedi".
+- CODEX-235: espone piano T35: `scripts/test_sim_mode.py` con flusso FileProvider->build_prompt->get_suggestions_with_fallback->parse, esiti controllati VALID/CONTROLLED_FAILURE/UNHANDLED; scope validators = format+utf8 (gia in ai_client) + parse finale, legality = scope T45b; DoD parte 1 (5/5 controllato) verificata ora con pytest mock, parte 2 (>=3/5 reale) rinviata a OPEN-001 batch; niente esecuzione CLI reale ora (20 min backoff inutili).
+- USER-077: approva con "Approvo, procedi" (niente commit/push).
+
+### Stato verificato pre-implementazione
+
+- `app/file_provider.py` (T33), `app/prompt_builder.py` (T25), `app/ai_client.py` (T26-T30) disponibili.
+- 5 mock draft JSON in `tests/mock_drafts/` (T34) caricabili.
+- Suite 49/49 pre-T35.
+
+### Decisioni di design dichiarate nel piano
+
+- Script standalone con `if __name__ == "__main__"` guard.
+- `run_scenario` async (await FileProvider) + chiamata sync get_suggestions_with_fallback.
+- Esiti controllati: VALID / CONTROLLED_FAILURE (RuntimeError chain exhausted) / UNHANDLED (bug).
+- Exit code 0 se 0 UNHANDLED, 1 altrimenti.
+- Scope validators T35: format+utf8 (gia interni a ai_client) + parse SuggestionOutput; legality = T45b.
+- Verifica logica via `tests/test_sim_mode.py` mock-based (import script via importlib), 2 test: all_valid + chain_exhausted_controlled.
+- DoD parte 2 (>=3/5 reale) rinviata a OPEN-001 batch.
+
+### Decisioni documentali
+
+- README: T35 fatto (logica mock; DoD reale OPEN-001), M4 chiuso, prossimo M5/T36.
+- INCIDENTS/SPEC_ERRATA non aggiornati (salvo UNHANDLED reale).
+- Desktop status aggiornato; OPEN-001 conferma T35 DoD runtime in batch.
+- PROMPT_LOG: questa entry prima dell'output applicativo.
+
+## PLOG-2026-05-14-029 - M4/T35 sim mode script (M4 chiuso lato codice)
+
+- Data: 2026-05-14
+- Scope: implementare solo M4/T35 dopo approvazione.
+- Stato: T35 completato (logica mock); suite 51/51 PASSED; M4 chiuso lato codice.
+
+### Messaggi catalogati
+
+- CODEX-236: crea `scripts/test_sim_mode.py` (run_scenario/run_all/main, esiti controllati).
+- CODEX-237: crea `tests/test_sim_mode.py` (import script via importlib, 2 test mock: all_valid + chain_exhausted_is_controlled).
+- CODEX-238: compile OK; 2/2 T35 PASSED; full suite 51/51 PASSED (49 + 2).
+
+### File modificati
+
+- `scripts/test_sim_mode.py`:
+  - nuovo; flusso sim 5 scenari; esiti VALID/CONTROLLED_FAILURE/UNHANDLED; summary + exit code.
+  - docstring documenta impatto OPEN-001 e rinvio DoD parte 2.
+- `tests/test_sim_mode.py`:
+  - nuovo; 2 test mock-based (importlib load dello script); all_valid -> 5/5 VALID; chain_exhausted -> 5/5 CONTROLLED_FAILURE, 0 UNHANDLED.
+- `README.md`:
+  - M4 chiuso lato codice, prossimo M5/T36.
+- `C:\Users\user\Desktop\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`:
+  - T35 fatto, M4 chiuso, prossimo M5/T36; file in elenco; OPEN-001 conferma T35 DoD runtime batch.
+- `PROMPT_LOG.md`:
+  - PLOG-2026-05-14-028 (Piano) + 029 (Impl).
+- `INCIDENTS.md` / `SPEC_ERRATA.md`: non aggiornati.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall scripts\test_sim_mode.py
+.\.venv\Scripts\python.exe -m pytest tests/test_sim_mode.py -v
+.\.venv\Scripts\python.exe -m pytest tests/
+```
+
+Esito:
+
+```text
+tests/test_sim_mode.py::test_sim_mode_all_valid PASSED
+tests/test_sim_mode.py::test_sim_mode_chain_exhausted_is_controlled PASSED
+2 passed in 1.51s
+51 passed in 1.78s
+```
+
+DoD T35:
+
+- Parte 1 ("5/5 scenari non crashano, esito controllato"): VERIFICATA via mock.
+  - `test_sim_mode_all_valid`: AI mock valido -> 5/5 VALID.
+  - `test_sim_mode_chain_exhausted_is_controlled`: AI mock RuntimeError -> 5/5 CONTROLLED_FAILURE, 0 UNHANDLED (no crash).
+- Parte 2 ("almeno 3/5 SuggestionOutput valido end-to-end reale"): RINVIATA a OPEN-001 batch (chain Strategia A rate-limited), insieme a T27/T31/T58/T62.
+
+### Decisione
+
+- M4/T35 completato lato codice (logica mock; DoD reale in OPEN-001).
+- M4 (DraftStateProvider + FileProvider, T32-T35) CHIUSO lato codice.
+- Prossimo task da proporre: M5/T36 `parse_lockfile(path)` in `app/lcu_provider.py` (lockfile LCU: protocol, port, password; ricerca path standard poi psutil discovery). NOTA: M5 e "Should" (Demo Mode First: LCU dopo sim mode); il gating LCU del 09/05 e in INC-001.

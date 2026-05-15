@@ -13,9 +13,9 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 - Modalita operativa: Demo Mode First
 - Strategia AI default: Strategia A free-only via OpenRouter
 - Frontend MVP: HTML, Tailwind CDN, Vanilla JS + fetch
-- Stato codice applicativo: M3 in corso (M2 chiuso T13-T22; M3/T23-T26 completati; M3/T27 codice completato, DoD runtime rinviato per rate limit upstream chain Strategia A - vedi INC-008; M3/T28-T29 fallback chain con 429 backoff + validation retry completati, 9/9 test pytest PASSED + 37/37 suite totale PASSED)
-- Prossimo task tecnico: M3/T30 logging JSONL chiamate AI
-- Open issues (da rivedere): API key OpenRouter da ruotare (INC-007) e chain Strategia A da validare empiricamente (INC-008: Mistral model ID 404 + 3/4 modelli rate-limited). Utente investiga modello free affidabile o switch a Strategia B paid
+- Stato codice applicativo: M3 e M4 chiusi lato codice (T23-T35: prompts, ai_client chain/validation/logging, DraftStateProvider, FileProvider, 5 mock draft, sim mode script). DoD runtime AI reali (T27/T31/T35/T58/T62) rinviate in batch a OPEN-001 (chain Strategia A rate-limited - vedi INC-008). Suite 51/51 PASSED
+- Prossimo task tecnico: M5/T36 lockfile parser LCU (M5 = Should, dopo sim mode)
+- Open issues (da rivedere): OPEN-001 API key OpenRouter da ruotare (INC-007) + chain Strategia A da validare (INC-008: Mistral model ID 404 + 3/4 modelli rate-limited), utente investiga modello free/paid; OPEN-002 dati scenario benchmark 09/05 (test_scenarios.md) NON nel repo, utente li aggiunge da casa, nel frattempo scenari plumbing documentati
 
 ## Funzionalita MVP
 

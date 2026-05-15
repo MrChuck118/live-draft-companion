@@ -1,0 +1,21 @@
+{
+  "patch": "16.10.1",
+  "user_role": "SUPPORT",
+  "bans": ["Blitzcrank", "Thresh", "Pyke", "Nautilus", "Leona"],
+  "enemy_team": [
+    {"role": "TOP", "champion": "Aatrox"},
+    {"role": "JUNGLE", "champion": "Kha'Zix"},
+    {"role": "MID", "champion": "Ahri"},
+    {"role": "ADC", "champion": "Caitlyn"},
+    {"role": "SUPPORT", "champion": "Lux"}
+  ],
+  "ally_team": [
+    {"role": "TOP", "champion": "Camille"},
+    {"role": "JUNGLE", "champion": "Elise"},
+    {"role": "MID", "champion": "Syndra"},
+    {"role": "ADC", "champion": "Jinx"},
+    {"role": "SUPPORT", "champion": null}
+  ],
+  "actions": [],
+  "local_player_cell_id": 9
+}

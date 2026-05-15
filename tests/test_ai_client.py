@@ -1,12 +1,15 @@
 """Tests for app.ai_client fallback chain + validation retry logic (M3/T28-T29)."""
 
 import json
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
 from openai import APIError, APITimeoutError, RateLimitError
 
 from app.ai_client import get_suggestions_with_fallback
+from app.models import ChampionPick, DraftState, SuggestionOutput
+from app.prompt_builder import build_prompt
 
 _VALID_SUGGESTION_JSON = json.dumps(
     {
@@ -44,6 +47,8 @@ def _fake_response(content: str = _VALID_SUGGESTION_JSON) -> MagicMock:
     resp.choices = [MagicMock()]
     resp.choices[0].message.content = content
     resp.model = "fake-model"
+    resp.usage.prompt_tokens = 120
+    resp.usage.completion_tokens = 85
     return resp
 
 
@@ -79,6 +84,14 @@ def env_chain(monkeypatch: pytest.MonkeyPatch) -> None:
 def fast_sleep(monkeypatch: pytest.MonkeyPatch) -> None:
     """Skip real sleeps in fallback tests so 30s backoff does not slow the suite."""
     monkeypatch.setattr("app.ai_client._sleep", lambda seconds: None)
+
+
+@pytest.fixture(autouse=True)
+def isolate_logs(monkeypatch: pytest.MonkeyPatch, tmp_path) -> object:
+    """Redirect AI-call JSONL logs to a temp dir so tests never touch the real logs/ dir."""
+    log_dir = tmp_path / "logs"
+    monkeypatch.setattr("app.ai_client._LOGS_DIR", log_dir)
+    return log_dir
 
 
 def test_success_on_primary_first_attempt(env_chain: None) -> None:
@@ -170,3 +183,155 @@ def test_validation_mojibake_then_retry_succeeds(env_chain: None) -> None:
         result = get_suggestions_with_fallback("sys", "user")
     assert result is clean
     assert mock_call.call_count == 2
+
+
+def test_logging_three_calls_produce_three_jsonl_lines(
+    env_chain: None, isolate_logs: object
+) -> None:
+    """DoD T30: after 3 successful calls the daily JSONL file has 3 parseable lines."""
+    fake = _fake_response()
+    with patch("app.ai_client.call_model", return_value=fake):
+        for _ in range(3):
+            get_suggestions_with_fallback("sys", "user")
+
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    log_file = isolate_logs / f"ai_calls_{date_str}.jsonl"
+    assert log_file.exists()
+
+    lines = log_file.read_text(encoding="utf-8").strip().split("\n")
+    assert len(lines) == 3
+
+    required = {
+        "timestamp",
+        "model_used",
+        "prompt_hash",
+        "latency_ms",
+        "usage",
+        "cost",
+        "json_ok",
+        "validation_results",
+        "retry_count",
+    }
+    for line in lines:
+        record = json.loads(line)
+        assert required.issubset(record.keys())
+        assert record["outcome"] == "success"
+        assert record["model_used"] == "primary-model"
+        assert record["json_ok"] is True
+        assert record["cost"] is None
+        assert record["validation_results"] == {"format": True, "utf8": True}
+        assert record["usage"] == {"prompt_tokens": 120, "completion_tokens": 85}
+
+
+# --- M3/T31 end-to-end flow tests (3 scenari) ---
+# NOTA: questi DraftState sono fixture di PLUMBING per testare il flusso
+# prompt -> call -> validate -> log. NON sono i dati reali del benchmark
+# 09/05/2026 (non disponibili nel repo). I mock draft reali sono scope
+# T34/T57 (tests/mock_drafts/*.json). La DoD chiamata reale di T31 e
+# rinviata a OPEN-001 in batch con T27/T35/T58/T62.
+
+
+def _draft_balanced_mid() -> DraftState:
+    return DraftState(
+        patch="16.10.1",
+        user_role="MID",
+        bans=["Yasuo", "Zed", "Yone", "Akali", "Sylas"],
+        enemy_team=[
+            ChampionPick(role="TOP", champion="Ornn"),
+            ChampionPick(role="JUNGLE", champion="Vi"),
+            ChampionPick(role="MID", champion="Orianna"),
+            ChampionPick(role="ADC", champion="Jinx"),
+            ChampionPick(role="SUPPORT", champion="Thresh"),
+        ],
+        ally_team=[
+            ChampionPick(role="TOP", champion="Sett"),
+            ChampionPick(role="JUNGLE", champion="Sejuani"),
+            ChampionPick(role="MID", champion=None),
+            ChampionPick(role="ADC", champion="Kai'Sa"),
+            ChampionPick(role="SUPPORT", champion="Nautilus"),
+        ],
+        actions=[],
+        local_player_cell_id=2,
+    )
+
+
+def _draft_mid_meta_banned() -> DraftState:
+    return DraftState(
+        patch="16.10.1",
+        user_role="MID",
+        bans=["Ahri", "Orianna", "Syndra", "Viktor", "Azir"],
+        enemy_team=[
+            ChampionPick(role="TOP", champion="Garen"),
+            ChampionPick(role="MID", champion="Vex"),
+        ],
+        ally_team=[
+            ChampionPick(role="JUNGLE", champion="Lee Sin"),
+            ChampionPick(role="MID", champion=None),
+        ],
+        actions=[],
+        local_player_cell_id=0,
+    )
+
+
+def _draft_last_pick_support() -> DraftState:
+    return DraftState(
+        patch="16.10.1",
+        user_role="SUPPORT",
+        bans=["Blitzcrank", "Thresh", "Pyke", "Nautilus", "Leona"],
+        enemy_team=[
+            ChampionPick(role="TOP", champion="Aatrox"),
+            ChampionPick(role="JUNGLE", champion="Kha'Zix"),
+            ChampionPick(role="MID", champion="Ahri"),
+            ChampionPick(role="ADC", champion="Caitlyn"),
+            ChampionPick(role="SUPPORT", champion="Lux"),
+        ],
+        ally_team=[
+            ChampionPick(role="TOP", champion="Camille"),
+            ChampionPick(role="JUNGLE", champion="Elise"),
+            ChampionPick(role="MID", champion="Syndra"),
+            ChampionPick(role="ADC", champion="Jinx"),
+            ChampionPick(role="SUPPORT", champion=None),
+        ],
+        actions=[],
+        local_player_cell_id=9,
+    )
+
+
+def _run_e2e(draft: DraftState, isolate_logs: object) -> SuggestionOutput:
+    """Full flow: build_prompt -> get_suggestions_with_fallback (mocked) -> validate -> log."""
+    system, user = build_prompt(draft, {})
+    assert system != ""
+    assert user != ""
+    assert draft.user_role in user
+
+    valid = _fake_response()
+    with patch("app.ai_client.call_model", return_value=valid):
+        response = get_suggestions_with_fallback(system, user)
+
+    parsed = SuggestionOutput.model_validate_json(response.choices[0].message.content)
+
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    log_file = isolate_logs / f"ai_calls_{date_str}.jsonl"
+    assert log_file.exists()
+    last_record = json.loads(log_file.read_text(encoding="utf-8").strip().split("\n")[-1])
+    assert last_record["outcome"] == "success"
+    return parsed
+
+
+def test_e2e_balanced_mid(env_chain: None, isolate_logs: object) -> None:
+    """DoD T31 (plumbing): scenario balanced_mid -> SuggestionOutput valido + log scritto."""
+    parsed = _run_e2e(_draft_balanced_mid(), isolate_logs)
+    assert len(parsed.suggestions) == 3
+    assert parsed.patch == "16.10.1"
+
+
+def test_e2e_mid_meta_banned(env_chain: None, isolate_logs: object) -> None:
+    """DoD T31 (plumbing): scenario mid_meta_banned -> SuggestionOutput valido + log scritto."""
+    parsed = _run_e2e(_draft_mid_meta_banned(), isolate_logs)
+    assert len(parsed.suggestions) == 3
+
+
+def test_e2e_last_pick_support(env_chain: None, isolate_logs: object) -> None:
+    """DoD T31 (plumbing): scenario last_pick_support -> SuggestionOutput valido + log scritto."""
+    parsed = _run_e2e(_draft_last_pick_support(), isolate_logs)
+    assert len(parsed.suggestions) == 3

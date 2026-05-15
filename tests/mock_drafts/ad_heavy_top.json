@@ -1,0 +1,21 @@
+{
+  "patch": "16.10.1",
+  "user_role": "TOP",
+  "bans": ["Darius", "Fiora", "Camille", "Jax", "Riven"],
+  "enemy_team": [
+    {"role": "TOP", "champion": "Renekton"},
+    {"role": "JUNGLE", "champion": "Lee Sin"},
+    {"role": "MID", "champion": "Talon"},
+    {"role": "ADC", "champion": "Jhin"},
+    {"role": "SUPPORT", "champion": "Pyke"}
+  ],
+  "ally_team": [
+    {"role": "TOP", "champion": null},
+    {"role": "JUNGLE", "champion": "Vi"},
+    {"role": "MID", "champion": "Ahri"},
+    {"role": "ADC", "champion": "Kai'Sa"},
+    {"role": "SUPPORT", "champion": "Nautilus"}
+  ],
+  "actions": [],
+  "local_player_cell_id": 0
+}
