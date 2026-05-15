@@ -19,8 +19,9 @@ La spec v2.3 resta FROZEN. Questo file registra aggiornamenti di stato e correzi
 ## ERRATA-003 - Strategia AI default chiusa su Strategia A free-only
 
 - Data: 2026-05-11
-- Stato: confermato
+- Stato: superato da ERRATA-006 (2026-05-15)
 - Sintesi: la configurazione default del MVP parte da Strategia A free-only via OpenRouter. Strategia B resta piano di emergenza attivabile via `.env` solo dopo rate limit cronico documentato.
+- Nota 2026-05-15: superato da ERRATA-006. Il provider AI non e piu OpenRouter (ne Strategia A ne B) ma DeepSeek API diretta. Questa errata resta come registro storico della decisione originale.
 
 ## ERRATA-004 - Aggiornamento pin `psutil` per Python 3.12.10
 
@@ -81,3 +82,41 @@ Il task T08 deve verificare che `fetch_items()` restituisca item reali dalla pat
 ### Impatto
 
 Nessun cambiamento a MVP, RF, architettura o codice applicativo. Cambia solo l'esempio usato nel DoD per allineare il test ai dati reali di Data Dragon.
+
+## ERRATA-006 - Provider AI cambiato da OpenRouter a DeepSeek API diretta
+
+- Data: 2026-05-15
+- Sezione spec interessata: 7.2, 7.4, 9.4 (provider e chain modelli AI)
+- Tipo: cambio operativo di provider AI runtime
+- Stato: applicato in `app/ai_client.py` e `.env.example`
+- Supera: ERRATA-003 (Strategia A/B OpenRouter). Rende non necessaria la prevista errata di correzione del model ID Mistral (INC-008 sub-issue).
+
+### Problema
+
+La chain Strategia A free-only via OpenRouter (ERRATA-003) si e rivelata non utilizzabile per le DoD runtime: 3/4 modelli rate-limited upstream e 1/4 con model ID inesistente (INC-008). Lo switch a Strategia B richiedeva un top-up su OpenRouter. L'utente ha invece gia acquistato credito ($5) direttamente su `platform.deepseek.com` e ha scelto di andare diretto su DeepSeek anziche passare per OpenRouter.
+
+### Aggiornamento
+
+Il provider AI runtime passa da:
+
+```text
+OpenRouter (base_url https://openrouter.ai/api/v1, OPENROUTER_API_KEY,
+chain Strategia A free + Strategia B fallback)
+```
+
+a:
+
+```text
+DeepSeek API diretta (base_url https://api.deepseek.com, DEEPSEEK_API_KEY,
+LLM_MODEL_PRIMARY=deepseek-chat, LLM_MODEL_FALLBACK_1=deepseek-reasoner)
+```
+
+Modifiche applicate: `app/ai_client.py` (base URL, env var della key, rimozione header OpenRouter-specifici) e `.env.example` (variabile key e chain modelli). Dettaglio in `PROMPT_LOG.md` PLOG-2026-05-15-030.
+
+### Motivazione
+
+DeepSeek espone un'API OpenAI-compatible: il client SDK esistente funziona cambiando solo `base_url` e nome variabile della key, senza riscrivere la logica di chain/retry/validazione. Usare il credito gia pagato su DeepSeek evita un secondo top-up su OpenRouter e rimuove la dipendenza dai free tier rate-limited. Non esiste un model ID "deepseek-v4-flash" sull'API diretta (era un alias OpenRouter): il modello "flash" richiesto e mappato su `deepseek-chat` (DeepSeek-V3).
+
+### Impatto
+
+Nessun cambiamento strutturale a MVP, RF, architettura, flusso dati o logica di fallback/validazione: cambiano solo endpoint, credenziale e ID modelli. Le DoD runtime AI reali (T27/T31/T35/T58/T62) vanno rieseguite contro DeepSeek dopo che l'utente configura `.env` con `DEEPSEEK_API_KEY`. Il vincolo JSON mode (`response_format=json_object`) e supportato da DeepSeek ma richiede la parola "json" nel prompt: da confermare al primo smoke test reale.

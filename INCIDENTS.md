@@ -172,6 +172,7 @@ L'utente ha approvato il passaggio del controllo DoD da `Luden's Companion` a `L
 - Fase: M3 / T26
 - Severita: media (rischio esposizione credenziali)
 - Stato: mitigato in repo, raccomandazione rotazione comunicata all'utente
+- Nota 2026-05-15: dopo ERRATA-006 il codice non usa piu `OPENROUTER_API_KEY` (provider = DeepSeek diretto). La raccomandazione di REVOCARE la key OpenRouter esposta (`...e26d34`) resta comunque valida e pendente: una key esposta va revocata anche se non piu usata dal progetto.
 
 ### Descrizione
 
@@ -210,7 +211,7 @@ Il flusso effettivo:
 - Data rilevazione: 2026-05-14
 - Fase: M3 / T27 (DoD smoke test JSON mode)
 - Severita: media (blocca DoD runtime, non l'implementazione)
-- Stato: aperto in attesa di decisione utente su come proseguire
+- Stato: risolto 2026-05-15 - switch a DeepSeek diretto (ERRATA-006)
 
 ### Descrizione
 
@@ -250,3 +251,14 @@ Per correggere serve:
 - Aggiornare `.env.example` e `.env` con il nuovo ID corretto.
 
 Questa correzione e subordinata ad approvazione utente: non si tocca `.env.example` (committato) senza decisione esplicita.
+
+### Risoluzione
+
+- Data: 2026-05-15
+- L'utente ha acquistato credito ($5) direttamente su `platform.deepseek.com` e ha scelto di abbandonare OpenRouter (sia Strategia A free sia Strategia B paid) per andare diretto su DeepSeek API.
+- Applicata ERRATA-006: `app/ai_client.py` e `.env.example` ora puntano a `https://api.deepseek.com` con `DEEPSEEK_API_KEY` e chain `deepseek-chat` / `deepseek-reasoner`.
+- Effetti su questo incidente:
+  - La chain OpenRouter rate-limited non e piu nel percorso runtime: la causa radice (free tier 429 + scelta tra attesa/top-up) decade.
+  - La sub-issue del model ID Mistral inesistente diventa nulla: i modelli OpenRouter sono stati rimossi da `.env.example`. La prevista ERRATA-006 di correzione model ID NON serve piu (il numero ERRATA-006 e stato usato per lo switch DeepSeek).
+- Residuo aperto: le DoD runtime reali (T27/T31/T35/T58/T62) restano da eseguire, ma ora contro DeepSeek, dopo che l'utente crea `.env` locale con `DEEPSEEK_API_KEY`. Non e piu un blocco da rate limit ma una semplice azione di configurazione utente.
+- Dettaglio decisione in `PROMPT_LOG.md` PLOG-2026-05-15-030.

@@ -1,4 +1,4 @@
-"""OpenRouter SDK client, single-model call, fallback chain, validation retry and JSONL logging (M3/T26-T30)."""
+"""DeepSeek SDK client (OpenAI-compatible), single-model call, fallback chain, validation retry and JSONL logging (M3/T26-T30)."""
 
 import hashlib
 import json
@@ -16,23 +16,18 @@ from app.validators import validator_format, validator_utf8_encoding
 
 load_dotenv()
 
-_BASE_URL = "https://openrouter.ai/api/v1"
-_DEFAULT_HEADERS = {
-    "HTTP-Referer": "https://github.com/MrChuck118/live-draft-companion",
-    "X-Title": "Live Draft Companion",
-}
+_BASE_URL = "https://api.deepseek.com"
 _LOGS_DIR = Path(__file__).resolve().parent.parent / "logs"
 
 
 def get_client() -> OpenAI:
-    """Return an OpenAI SDK client pointed at OpenRouter, reading the API key from env."""
-    api_key = os.environ.get("OPENROUTER_API_KEY")
+    """Return an OpenAI SDK client pointed at the DeepSeek API, reading the API key from env."""
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENROUTER_API_KEY not set in environment or .env file")
+        raise RuntimeError("DEEPSEEK_API_KEY not set in environment or .env file")
     return OpenAI(
         base_url=_BASE_URL,
         api_key=api_key,
-        default_headers=_DEFAULT_HEADERS,
     )
 
 
@@ -103,7 +98,7 @@ def _ai_call_record(
     retry_count: int,
     outcome: str,
 ) -> dict:
-    """Build one AI-call log record. `cost` is null: OpenRouter cost needs the /generation endpoint."""
+    """Build one AI-call log record. `cost` is null: not returned in the standard chat response."""
     return {
         "timestamp": datetime.now().isoformat(),
         "model_used": model_id,

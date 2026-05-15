@@ -4020,3 +4020,89 @@ DoD T35:
 - M4/T35 completato lato codice (logica mock; DoD reale in OPEN-001).
 - M4 (DraftStateProvider + FileProvider, T32-T35) CHIUSO lato codice.
 - Prossimo task da proporre: M5/T36 `parse_lockfile(path)` in `app/lcu_provider.py` (lockfile LCU: protocol, port, password; ricerca path standard poi psutil discovery). NOTA: M5 e "Should" (Demo Mode First: LCU dopo sim mode); il gating LCU del 09/05 e in INC-001.
+
+## PLOG-2026-05-15-030 - Switch AI runtime: OpenRouter -> DeepSeek diretto
+
+- Data: 2026-05-15
+- Scope: cambiare provider AI da OpenRouter a DeepSeek API diretta per sfruttare il credito ($5) gia pagato dall'utente su platform.deepseek.com.
+- Stato: completato lato codice; suite 13/13 test_ai_client PASSED.
+
+### Messaggi catalogati
+
+- USER-078: chiede in che file/riga inserire la API key; ha pagato $5 su DeepSeek, vuole provare "DeepSeek V4 flash".
+- CODEX-239: indica `.env` (da `.env.example` riga 5) + `app/ai_client.py` (load_dotenv, get_client); segnala MISMATCH: codice cablato su OpenRouter, una key DeepSeek diretta non funziona col base URL OpenRouter; propone 2 strade.
+- USER-079: sceglie la strada 2 (DeepSeek diretto: cambiare base URL + modello + variabile key).
+- CODEX-240: applica le modifiche a `app/ai_client.py` e `.env.example`; verifica 13/13 test PASSED.
+- USER-080: chiede di aggiornare il PROMPT_LOG.
+
+### File modificati
+
+- `app/ai_client.py`:
+  - docstring: "OpenRouter" -> "DeepSeek SDK client (OpenAI-compatible)".
+  - `_BASE_URL`: `https://openrouter.ai/api/v1` -> `https://api.deepseek.com`.
+  - rimossa costante `_DEFAULT_HEADERS` (HTTP-Referer + X-Title, identita app verso OpenRouter, non usata da DeepSeek).
+  - `get_client()`: legge `DEEPSEEK_API_KEY` invece di `OPENROUTER_API_KEY`; rimosso `default_headers`; messaggi RuntimeError aggiornati.
+  - commento `_ai_call_record`: rimosso riferimento all'endpoint /generation OpenRouter (cost resta `null`).
+- `.env.example`:
+  - `OPENROUTER_API_KEY` -> `DEEPSEEK_API_KEY=sk-your-deepseek-key-here`.
+  - chain ridotta a modelli DeepSeek diretti: `LLM_MODEL_PRIMARY=deepseek-chat`, `LLM_MODEL_FALLBACK_1=deepseek-reasoner`.
+  - rimossi i 4 modelli OpenRouter free/Strategia A e i 4 commentati Strategia B (non risolvono sul base URL DeepSeek).
+- `PROMPT_LOG.md`: questa entry.
+- `INCIDENTS.md` / `SPEC_ERRATA.md` / `README.md` / `PC_ITS_DEPENDENCIES_CHECKLIST.md`: NON aggiornati (restano riferimenti OpenRouter/Strategia A da allineare; segnalato all'utente, in attesa di decisione).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_ai_client.py -q
+```
+
+Esito:
+
+```text
+13 passed in 1.16s
+```
+
+### Note tecniche
+
+- I test patchano `call_model`/client e leggono solo `LLM_MODEL_*`, non la env var della key: rinominare la key non rompe la suite.
+- Nessun ID "deepseek-v4-flash" esiste sull'API DeepSeek diretta (era un alias OpenRouter, PLOG benchmark 09/05). Modelli reali diretti: `deepseek-chat` (V3, default) e `deepseek-reasoner` (thinking). Mappato il "flash" richiesto su `deepseek-chat`.
+- `response_format={"type":"json_object"}` ([ai_client.py:68]) supportato da DeepSeek ma richiede la parola "json" nel prompt: da confermare alla prima chiamata reale.
+
+### Decisione
+
+- Provider AI runtime = DeepSeek diretto. Strategia A/B OpenRouter (SPEC_ERRATA v1 ERRATA-003) di fatto superata da scelta utente; impatto su OPEN-001 (chain OpenRouter rate-limited) da rivalutare: il blocco potrebbe risolversi con credito DeepSeek pagato.
+- Azione utente pendente: creare `.env` locale da `.env.example` e inserire `DEEPSEEK_API_KEY` reale (NON in chat, vedi INC-007). Poi smoke test reale `ping_primary_model()`.
+- Documentazione (README/INCIDENTS/SPEC_ERRATA/checklist) da allineare in task separato su conferma utente.
+
+## PLOG-2026-05-15-031 - Allineamento documentazione a switch DeepSeek
+
+- Data: 2026-05-15
+- Scope: allineare i 4 file di documentazione ai cambiamenti di PLOG-2026-05-15-030 (switch OpenRouter -> DeepSeek diretto), senza toccare codice.
+- Stato: completato.
+
+### Messaggi catalogati
+
+- USER-081: "Si procedi con quell'allineamento ora, prima leggi bene tutto e capisci la logica con cui scrivere".
+- CODEX-241: legge integralmente README.md, SPEC_ERRATA.md, INCIDENTS.md, PC_ITS_DEPENDENCIES_CHECKLIST.md; dichiara la logica documentale (errata append-only, incidenti storici, audit datato come snapshot) e applica le modifiche coerenti.
+
+### Logica documentale applicata
+
+- README.md: documento di stato corrente -> aggiornati riferimenti fattuali (provider, stack, setup, OPEN-001).
+- SPEC_ERRATA.md: errata append-only, spec FROZEN -> ERRATA-003 NON riscritta (resta storica) ma marcata "superato da ERRATA-006"; aggiunta ERRATA-006 con struttura Problema/Aggiornamento/Motivazione/Impatto.
+- INCIDENTS.md: registro storico -> INC-007/INC-008 non riscritti; INC-007 annotato (key OpenRouter non piu usata ma da revocare comunque); INC-008 Stato -> risolto + sezione Risoluzione (sub-issue Mistral resa nulla).
+- PC_ITS_DEPENDENCIES_CHECKLIST.md: audit datato 2026-05-11 -> snapshot reachability lasciato storico; aggiunta sezione "Aggiornamento 2026-05-15"; aggiornate solo le righe di istruzione operativa (.env key, descrizione SDK).
+- Convenzione: italiano senza accenti (anti-mojibake, coerente coi file), date assolute.
+
+### File modificati
+
+- `README.md`: stato provider AI, stato codice applicativo, OPEN-001 rivista, stack (httpx senza OpenRouter, "DeepSeek API tramite SDK OpenAI-compatible"), setup (`DEEPSEEK_API_KEY` + richiamo INC-007).
+- `SPEC_ERRATA.md`: ERRATA-003 Stato "superato da ERRATA-006" + nota; nuova ERRATA-006.
+- `INCIDENTS.md`: INC-007 nota 2026-05-15; INC-008 Stato risolto + Risoluzione.
+- `PC_ITS_DEPENDENCIES_CHECKLIST.md`: nuova sezione "Aggiornamento 2026-05-15"; riga `.env`, riga pacchetto `openai`, nota operativa finale aggiornate.
+- `PROMPT_LOG.md`: questa entry.
+
+### Decisione
+
+- Documentazione allineata a ERRATA-006. Nessuna modifica a codice o test in questa iterazione.
+- Residui invariati: revoca key OpenRouter esposta (INC-007) e creazione `.env` con `DEEPSEEK_API_KEY` reale lato utente, poi smoke test reale `ping_primary_model()`.
+- Nessun commit/push (non richiesto).

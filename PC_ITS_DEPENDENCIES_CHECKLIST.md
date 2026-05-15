@@ -14,6 +14,13 @@ Remote: `https://github.com/MrChuck118/live-draft-companion.git`
 - Dipendenze esterne raggiungibili: Data Dragon, OpenRouter model listing, Tailwind CDN.
 - Mancanze residue: `python`/`py` non sono nel PATH, `.env` con API key non configurato, League of Legends non presente su questo PC.
 
+## Aggiornamento 2026-05-15 (post-audit)
+
+Questo documento e uno snapshot dell'audit del 2026-05-11 e le tabelle sotto restano come fotografia di quella data. Cambiamento successivo rilevante (ERRATA-006, INC-008 risoluzione, PLOG-2026-05-15-030):
+
+- Provider AI cambiato da OpenRouter a DeepSeek API diretta. Il servizio esterno runtime ora e `https://api.deepseek.com` (non piu `https://openrouter.ai`). Il pacchetto `openai` resta SDK OpenAI-compatible, riusato invariato col nuovo `base_url`.
+- La variabile `.env` da configurare ora e `DEEPSEEK_API_KEY` (non piu `OPENROUTER_API_KEY`). Le righe di istruzione operativa in questo file sono state aggiornate di conseguenza; le righe di snapshot reachability del 2026-05-11 sono lasciate come storiche.
+
 ## Checklist Sistema
 
 | Voce | Richiesta | Stato iniziale | Azione eseguita | Stato finale | Note |
@@ -28,7 +35,7 @@ Remote: `https://github.com/MrChuck118/live-draft-companion.git`
 | Browser | Necessario per UI | Edge e Chrome presenti | Verificato | OK | Firefox non presente; basta un browser default |
 | Microsoft C++ Build Tools | Non richiesto dopo ERRATA-004 | Non rilevato | Nessuna | OK | Non serve con `psutil>=5.9.8,<8` perche usa wheel |
 | League of Legends client | Necessario solo live mode | Non rilevato | Non installato | Manuale | Su pc its usare sim mode; live mode richiede installazione manuale |
-| `.env` | Necessario per chiamate AI reali | Assente | Non creato con placeholder | Manuale | Creare da `.env.example` e inserire `OPENROUTER_API_KEY` reale |
+| `.env` | Necessario per chiamate AI reali | Assente | Non creato con placeholder | Manuale | Creare da `.env.example` e inserire `DEEPSEEK_API_KEY` reale (ex `OPENROUTER_API_KEY`, vedi Aggiornamento 2026-05-15) |
 
 ## Checklist Librerie Python Dirette
 
@@ -44,7 +51,7 @@ Tutte le dipendenze sotto sono installate nella virtualenv `C:\LiveDraftCompanio
 | `pydantic-settings` | Config `.env` | Installato | Verifica import | `2.14.1` | OK |
 | `sqlalchemy` | SQLite ORM | Installato | Verifica import | `2.0.49` | OK |
 | `aiosqlite` | SQLite async | Installato | Verifica import | `0.22.1` | OK |
-| `openai` | SDK OpenRouter-compatible | Installato | Verifica import | `2.36.0` | OK |
+| `openai` | SDK OpenAI-compatible (OpenRouter all'audit, DeepSeek da 2026-05-15) | Installato | Verifica import | `2.36.0` | OK |
 | `python-dotenv` | Lettura `.env` | Installato | Verifica import | `1.2.2` | OK |
 | `sse-starlette` | SSE opzionale | Installato | Verifica import | `3.4.2` | OK |
 | `pyinstaller` | Build `.exe` | Installato | Verifica `python -m PyInstaller --version` | `6.20.0` | OK |
@@ -105,4 +112,4 @@ DRAFT_PROVIDER_MODE=sim
 DRAFT_PROVIDER_FILE=tests/mock_drafts/balanced_mid.json
 ```
 
-- Prima delle chiamate AI reali serve creare `.env` da `.env.example` e inserire `OPENROUTER_API_KEY`.
+- Prima delle chiamate AI reali serve creare `.env` da `.env.example` e inserire `DEEPSEEK_API_KEY` (ex `OPENROUTER_API_KEY`, vedi Aggiornamento 2026-05-15).

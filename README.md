@@ -11,11 +11,11 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 - Errata di riferimento: v1 del 2026-05-11
 - Breakdown operativo: v2.1 del 2026-05-11
 - Modalita operativa: Demo Mode First
-- Strategia AI default: Strategia A free-only via OpenRouter
+- Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback). Strategia A/B OpenRouter superata (vedi ERRATA-006, 2026-05-15)
 - Frontend MVP: HTML, Tailwind CDN, Vanilla JS + fetch
-- Stato codice applicativo: M3 e M4 chiusi lato codice (T23-T35: prompts, ai_client chain/validation/logging, DraftStateProvider, FileProvider, 5 mock draft, sim mode script). DoD runtime AI reali (T27/T31/T35/T58/T62) rinviate in batch a OPEN-001 (chain Strategia A rate-limited - vedi INC-008). Suite 51/51 PASSED
+- Stato codice applicativo: M3 e M4 chiusi lato codice (T23-T35: prompts, ai_client chain/validation/logging, DraftStateProvider, FileProvider, 5 mock draft, sim mode script). DoD runtime AI reali (T27/T31/T35/T58/T62) da rieseguire su DeepSeek diretto dopo configurazione `.env` utente. Suite 51/51 PASSED
 - Prossimo task tecnico: M5/T36 lockfile parser LCU (M5 = Should, dopo sim mode)
-- Open issues (da rivedere): OPEN-001 API key OpenRouter da ruotare (INC-007) + chain Strategia A da validare (INC-008: Mistral model ID 404 + 3/4 modelli rate-limited), utente investiga modello free/paid; OPEN-002 dati scenario benchmark 09/05 (test_scenarios.md) NON nel repo, utente li aggiunge da casa, nel frattempo scenari plumbing documentati
+- Open issues (da rivedere): OPEN-001 RIVISTA - chain Strategia A OpenRouter abbandonata, provider = DeepSeek diretto (INC-008 risolto, ERRATA-006); residui: revocare la key OpenRouter esposta (INC-007) e creare `.env` con `DEEPSEEK_API_KEY` reale per gli smoke test runtime; OPEN-002 dati scenario benchmark 09/05 (test_scenarios.md) NON nel repo, utente li aggiunge da casa, nel frattempo scenari plumbing documentati
 
 ## Funzionalita MVP
 
@@ -34,11 +34,11 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 - Python 3.12.10
 - FastAPI + uvicorn
 - HTML/CSS/JavaScript con Tailwind via CDN
-- httpx async lato backend per LCU, Data Dragon e OpenRouter
+- httpx async lato backend per LCU e Data Dragon
 - Vanilla JS + fetch lato frontend per chiamare le API locali
 - Pydantic v2 + pydantic-settings
 - SQLite + SQLAlchemy + aiosqlite
-- OpenRouter tramite SDK OpenAI-compatible
+- DeepSeek API diretta tramite SDK OpenAI-compatible
 - PyInstaller per packaging Windows
 - pytest / pytest-asyncio per test
 
@@ -63,7 +63,7 @@ pip install -r requirements.txt
 copy .env.example .env
 ```
 
-Poi configurare `OPENROUTER_API_KEY` in `.env` e scegliere modalita live o simulazione.
+Poi configurare `DEEPSEEK_API_KEY` in `.env` e scegliere modalita live o simulazione. La key DeepSeek va scritta solo nel file `.env` locale, mai in chat o in file versionati (vedi INC-007).
 
 ## Modalita Simulazione
 
