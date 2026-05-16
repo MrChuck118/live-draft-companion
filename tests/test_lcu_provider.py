@@ -74,3 +74,77 @@ def test_find_lockfile_via_process_discovery(tmp_path, monkeypatch) -> None:
 
     assert result == tmp_path / "lockfile"
     assert parse_lockfile(result)["port"] == "54321"
+
+
+class _FakeResponse:
+    status_code = 200
+
+
+class _FakeAsyncClient:
+    last_init: dict = {}
+    last_request: dict = {}
+
+    def __init__(self, **kwargs) -> None:
+        _FakeAsyncClient.last_init = kwargs
+
+    async def __aenter__(self) -> "_FakeAsyncClient":
+        return self
+
+    async def __aexit__(self, *exc) -> bool:
+        return False
+
+    async def request(self, method, url, **kwargs) -> _FakeResponse:
+        _FakeAsyncClient.last_request = {"method": method, "url": url, **kwargs}
+        return _FakeResponse()
+
+
+@pytest.mark.asyncio
+async def test_lcu_request_builds_authenticated_loopback_request(tmp_path, monkeypatch) -> None:
+    lockfile = tmp_path / "lockfile"
+    lockfile.write_text(_VALID_LOCKFILE, encoding="utf-8")
+    monkeypatch.setattr(lcu_provider.httpx, "AsyncClient", _FakeAsyncClient)
+
+    response = await lcu_provider.lcu_request(
+        "GET", "/lol-gameflow/v1/session", lockfile_path=lockfile
+    )
+
+    assert response.status_code == 200
+    assert _FakeAsyncClient.last_init.get("verify") is False
+    assert _FakeAsyncClient.last_request["method"] == "GET"
+    assert (
+        _FakeAsyncClient.last_request["url"]
+        == "https://127.0.0.1:54321/lol-gameflow/v1/session"
+    )
+    assert _FakeAsyncClient.last_request["auth"] == ("riot", "S3cr3tPassw0rd")
+
+
+@pytest.mark.asyncio
+async def test_lcu_request_uses_find_lockfile_when_no_path(tmp_path, monkeypatch) -> None:
+    lockfile = tmp_path / "lockfile"
+    lockfile.write_text(_VALID_LOCKFILE, encoding="utf-8")
+    monkeypatch.setattr(lcu_provider, "find_lockfile", lambda: lockfile)
+    monkeypatch.setattr(lcu_provider.httpx, "AsyncClient", _FakeAsyncClient)
+
+    await lcu_provider.lcu_request("GET", "lol-gameflow/v1/session")
+
+    assert (
+        _FakeAsyncClient.last_request["url"]
+        == "https://127.0.0.1:54321/lol-gameflow/v1/session"
+    )
+
+
+def test_no_summoner_endpoint_in_python_sources() -> None:
+    """DoD T37 / spec 10.1: no summoner endpoint referenced in any .py source.
+
+    The forbidden token is assembled at runtime so this assertion itself does
+    not contain the literal (keeps `git grep` clean too).
+    """
+    forbidden = "lol-" + "summoner"
+    root = Path(__file__).resolve().parent.parent
+    offenders = []
+    for py_file in root.rglob("*.py"):
+        if ".venv" in py_file.parts:
+            continue
+        if forbidden in py_file.read_text(encoding="utf-8"):
+            offenders.append(str(py_file.relative_to(root)))
+    assert offenders == [], f"summoner endpoint referenced in: {offenders}"

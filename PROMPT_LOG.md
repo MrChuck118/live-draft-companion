@@ -4375,3 +4375,49 @@ Esiti: compile exit 0; 6/6 T36 PASSED; suite totale 57 passed.
 - M5/T36 chiuso lato codice. Verifica live (path reale E:\) confermata in scope T40.
 - Nessun commit/push in questa iterazione (paletto: solo su richiesta utente). PLOG-037 e PLOG-038 + codice T36 + README pronti per il prossimo commit quando richiesto.
 - Prossimo task tecnico: M5/T37 (`lcu_request` httpx con HTTP Basic + verify=False, endpoint privacy-safe `/lol-gameflow/v1/session`), stesso metodo piano->approvazione->implementazione->docs.
+
+## PLOG-2026-05-16-039 - M5/T37 lcu_request httpx verify=False privacy-safe (impl + 3 test)
+
+- Data: 2026-05-16
+- Scope: implementare solo M5/T37 dopo approvazione del piano.
+- Stato: T37 completato e verificato; suite 60/60 PASSED. Nessun commit (in attesa di richiesta utente).
+
+### Messaggi catalogati
+
+- USER-095: conferma decisioni 1+2; commit/push T36 + esporre piano T37.
+- CODEX-262: commit `c2b0002` (T36 + README + PLOG-037/038) su main, pushato, locale==remoto; avviso non bloccante LF->CRLF su nuovi file (autocrlf repo), nessun impatto funzionale.
+- CODEX-263: espone piano M5/T37.
+- USER-096: "approvato procedi".
+- CODEX-264: verificato stile httpx di data_dragon.py (`async with httpx.AsyncClient(timeout=...)`); esteso `app/lcu_provider.py` con import httpx + `_LCU_USERNAME` + `lcu_request`; aggiunti 3 test in `tests/test_lcu_provider.py`.
+- CODEX-265: compile exit 0; `pytest tests/test_lcu_provider.py` 9/9; `git grep lol-summoner -- *.py` nessun match (DoD); `pytest tests/` 60/60 PASSED.
+
+### File modificati
+
+- `app/lcu_provider.py`: import `httpx`, costante `_LCU_USERNAME="riot"`, funzione `async lcu_request(method, path, *, lockfile_path=None, timeout=10.0) -> httpx.Response`. Risolve lockfile (param o find_lockfile), costruisce URL loopback `https://127.0.0.1:<port><path>`, HTTP Basic `riot:<password>`, `httpx.AsyncClient(verify=False)` (cert self-signed locale, loopback-only, previsto da RF-003). Nessun path summoner aggiunto (privacy by design spec 10.1).
+- `tests/test_lcu_provider.py`: +3 test (richiesta autenticata loopback con fake AsyncClient: verify=False, url, auth, status; fallback find_lockfile senza path; guard `lol-summoner` assemblato a runtime su tutti i .py escluso .venv).
+- `README.md`: stato codice -> M5/T36-T37 chiusi, suite 60/60; prossimo task -> M5/T38.
+- `PROMPT_LOG.md`: questa PLOG-039.
+- `INCIDENTS.md` / `SPEC_ERRATA.md`: NON modificati (nessun incidente reale, nessun errata).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\lcu_provider.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_lcu_provider.py -q
+git grep -n "lol-summoner" -- "*.py"   # nessun match (exit 1 = no match, atteso)
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: compile exit 0; 9/9 T36+T37 PASSED; git grep nessun match; suite totale 60 passed.
+
+### DoD T37
+
+- `lcu_request("GET", "/lol-gameflow/v1/session")` costruisce richiesta autenticata loopback con verify=False: VERIFICATO via mock (fake AsyncClient).
+- Nessuna chiamata all'endpoint summoner; `git grep "lol-summoner" -- "*.py"` nessun match: VERIFICATO (anche test runtime con token assemblato).
+- HTTP 200 reale con LoL aperto: RINVIATO a T40 (piano approvato; client non aperto ora).
+
+### Decisione
+
+- M5/T37 chiuso lato codice. Verifica live reale in scope T40.
+- Nessun commit/push in questa iterazione (paletto: solo su richiesta utente).
+- Prossimo task tecnico: M5/T38 (task asyncio polling `/lol-gameflow/v1/session` ogni 2s, mantiene `current_phase`), stesso metodo piano->approvazione->implementazione->docs.
