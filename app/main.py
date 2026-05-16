@@ -24,8 +24,9 @@ from fastapi.templating import Jinja2Templates
 from app.config import get_settings
 from app.data_dragon import check_patch_and_refresh
 from app.db import init_db
-from app.models import DraftState
+from app.models import DraftState, SuggestionOutput
 from app.providers import get_draft_state_provider
+from app.suggestion_service import SuggestionError, SuggestionService
 
 # Path is relative to the process CWD (repo root in dev / via launcher).
 # PyInstaller sys._MEIPASS resolution is deferred to T66 per breakdown.
@@ -100,4 +101,22 @@ async def draft_state() -> DraftState:
         raise HTTPException(
             status_code=503,
             detail=f"Stato draft non disponibile: {type(exc).__name__}",
+        ) from exc
+
+
+@app.post("/api/suggest")
+async def suggest(draft_state: DraftState) -> SuggestionOutput:
+    """Thin endpoint: delegate the whole flow to SuggestionService (T45/T45b).
+
+    Body is a DraftState (FastAPI returns 422 on a malformed body). No cache /
+    prompt / validation / history logic here. On a controlled SuggestionError
+    return 503 without a stack trace or API key; full user-message mapping is
+    T49b.
+    """
+    try:
+        return await SuggestionService().suggest(draft_state)
+    except SuggestionError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Suggerimenti non disponibili, riprova tra poco.",
         ) from exc

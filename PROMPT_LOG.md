@@ -5021,3 +5021,47 @@ Esiti: compile exit 0; suite **99 passed** (93 + 6 T45b).
 
 - T45b chiuso. **M7a COMPLETO** (T50-T53 + T45b). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `app/suggestion_service.py`, `tests/test_suggestion_service.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M6b/T45 (endpoint sottile `POST /api/suggest` che delega a `SuggestionService`; dipende da T44, T31, T45b).
+
+## PLOG-2026-05-16-054 - M6b/T45 endpoint sottile POST /api/suggest (impl + 3 test, runtime VERDE)
+
+- Data: 2026-05-16
+- Scope: T45 (M6b) - route sottile `POST /api/suggest` -> `SuggestionService`. Avvia M6b. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T45 CHIUSO + DoD VERDE (path 200 con AI reale = OPEN-001 batch). Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-128: "ok procedi commit/push".
+- CODEX-301: commit/push T45b (498e63e su main); piano T45 esposto.
+- USER-129: "confermo procedi".
+- CODEX-302: implementazione T45 + 3 test + smoke runtime reale + questa PLOG-054 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `app/main.py`: import `SuggestionOutput`, `SuggestionError`, `SuggestionService`. Route `@app.post("/api/suggest")`: body `DraftState` (FastAPI -> 422 automatico su malformato); delega a `SuggestionService().suggest(draft_state)`; ritorna `SuggestionOutput`. Su `SuggestionError` -> `HTTPException(503, "Suggerimenti non disponibili, riprova tra poco.")` (no stack trace, no API key; mapping completo = T49b). Endpoint sottile: zero logica cache/prompt/validation/history (tutto in T45b).
+- `tests/test_main.py`: import `SuggestionError`; +3 test (body valido + SuggestionService stub -> 200, 3 suggerimenti, draft deserializzato; body malformato -> 422; SuggestionError -> 503 controllato, nessun `sk-secret-xyz` ne `Traceback` nel body). Equivalenza cache miss/hit gia testata in T45b: l'endpoint la delega, non la re-testa.
+- `PROMPT_LOG.md`: questa PLOG-054. `BREAKDOWN_STATUS.md`/`README.md`: T45 chiuso, suite 102/102, prossimo T48.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\main.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+# smoke reale: DEEPSEEK_API_KEY= DRAFT_PROVIDER_MODE=sim uvicorn --port 8099
+#   POST /api/suggest (draft valido) -> 503 controllato (AI chain fallisce, no key)
+#   POST body malformato -> 422
+```
+
+Esiti: compile exit 0; suite **102 passed** (99 + 3 T45); smoke reale: POST draft valido senza key -> HTTP 503 `{"detail":"Suggerimenti non disponibili, riprova tra poco."}` (nessun stack trace/key); body malformato -> HTTP 422.
+
+### DoD T45
+
+- POST body draft -> 200 con 3 suggerimenti (cache miss): VERIFICATO via stub (path con AI reale = OPEN-001 batch, Demo Mode First).
+- 2a chiamata stesso body -> cache hit stesso output: delegato a `SuggestionService` (gia testato in T45b); endpoint resta sottile.
+- POST body malformato -> 422 Pydantic: VERIFICATO (test + smoke reale).
+- Eccezione interna AI -> non-2xx controllato senza stack trace/API key: VERIFICATO (test + smoke reale 503).
+
+### Decisione
+
+- T45 chiuso. Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `app/main.py`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M6b/T48 (`static/app.js` - bottone "Suggerisci ora" -> POST `/api/suggest` -> render 3 card champion+build+keystone+spiegazione).

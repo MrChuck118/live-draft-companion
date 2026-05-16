@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 import app.main as main
 from app.config import Settings
+from app.suggestion_service import SuggestionError
 
 
 def test_settings_defaults_without_env(monkeypatch) -> None:
@@ -193,3 +194,85 @@ def test_lifespan_datadragon_failure_non_fatal(monkeypatch, caplog) -> None:
     messages = [record.getMessage() for record in caplog.records]
     assert any("Data Dragon refresh skipped" in message for message in messages)
     assert any(message == "App ready" for message in messages)
+
+
+# --- T45: thin POST /api/suggest ---
+
+_VALID_DRAFT_BODY = {
+    "patch": "16.10.1",
+    "user_role": "MID",
+    "bans": ["Yasuo", "Zed", "Yone", "Akali", "Sylas"],
+    "enemy_team": [{"role": "TOP", "champion": None}],
+    "ally_team": [{"role": "MID", "champion": None}],
+    "actions": [],
+    "local_player_cell_id": 2,
+}
+
+
+def _sample_suggestion_output():
+    from app.models import SuggestionItem, SuggestionOutput
+
+    return SuggestionOutput(
+        patch="16.10.1",
+        suggestions=[
+            SuggestionItem(
+                rank=i,
+                champion=f"Champ{i}",
+                build_path=["Item A", "Item B", "Item C"],
+                keystone="Conqueror",
+                explanation="Buona scelta per il draft.",
+            )
+            for i in range(1, 4)
+        ],
+    )
+
+
+def test_suggest_valid_body_delegates_to_service(monkeypatch) -> None:
+    """DoD T45: valid body -> 200 with 3 suggestions (service delegated)."""
+    _mock_lifecycle(monkeypatch)
+    output = _sample_suggestion_output()
+    captured = {}
+
+    class FakeService:
+        async def suggest(self, draft_state):
+            captured["draft"] = draft_state
+            return output
+
+    monkeypatch.setattr(main, "SuggestionService", lambda: FakeService())
+
+    with TestClient(main.app) as client:
+        response = client.post("/api/suggest", json=_VALID_DRAFT_BODY)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["suggestions"]) == 3
+    assert captured["draft"].user_role == "MID"
+
+
+def test_suggest_malformed_body_returns_422(monkeypatch) -> None:
+    _mock_lifecycle(monkeypatch)
+
+    with TestClient(main.app) as client:
+        response = client.post("/api/suggest", json={"patch": "16.10.1"})
+
+    assert response.status_code == 422
+
+
+def test_suggest_service_error_returns_controlled_503(monkeypatch) -> None:
+    """SuggestionError -> 503 without stack trace or API key in the body."""
+    _mock_lifecycle(monkeypatch)
+
+    class FailingService:
+        async def suggest(self, draft_state):
+            raise SuggestionError("AI chain exhausted; key sk-secret-xyz")
+
+    monkeypatch.setattr(main, "SuggestionService", lambda: FailingService())
+
+    with TestClient(main.app) as client:
+        response = client.post("/api/suggest", json=_VALID_DRAFT_BODY)
+
+    assert response.status_code == 503
+    text = response.text
+    assert "sk-secret-xyz" not in text
+    assert "Traceback" not in text
+    assert response.json()["detail"]
