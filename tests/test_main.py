@@ -98,6 +98,23 @@ def test_static_app_js_served(monkeypatch) -> None:
     assert "2000" in body
 
 
+def test_static_app_js_has_suggest_wiring(monkeypatch) -> None:
+    """DoD T48: app.js POSTs /api/suggest from the button and renders cards."""
+    _mock_lifecycle(monkeypatch)
+
+    with TestClient(main.app) as client:
+        body = client.get("/static/app.js").text
+
+    assert "/api/suggest" in body
+    assert '"POST"' in body
+    assert "suggest-button" in body
+    assert "addEventListener" in body
+    assert 'getElementById("suggestions")' in body
+    # Cards render champion + keystone + build_path + explanation.
+    for field in ("champion", "keystone", "build_path", "explanation"):
+        assert field in body
+
+
 def _mock_lifecycle(monkeypatch) -> None:
     async def fake_init_db() -> None:
         return None

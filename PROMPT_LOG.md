@@ -5065,3 +5065,41 @@ Esiti: compile exit 0; suite **102 passed** (99 + 3 T45); smoke reale: POST draf
 
 - T45 chiuso. Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `app/main.py`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M6b/T48 (`static/app.js` - bottone "Suggerisci ora" -> POST `/api/suggest` -> render 3 card champion+build+keystone+spiegazione).
+
+## PLOG-2026-05-16-055 - M6b/T48 render suggerimenti in app.js (impl + 1 test, VERDE)
+
+- Data: 2026-05-16
+- Scope: T48 (M6b) - `static/app.js`: bottone -> POST /api/suggest -> render 3 card. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T48 CHIUSO + DoD VERDE (parte automatica; DOM visivo = check manuale browser). Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-130: "ok commit/push poi procedi con il piano".
+- CODEX-303: commit/push T45 (04684a2 su main); piano T48 esposto (nota onesta: DOM visivo = check manuale, come T47).
+- USER-131: "procedi".
+- CODEX-304: implementazione T48 + 1 test + smoke + questa PLOG-055 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `static/app.js`: header aggiornato (T47+T48). `latestDraftState` di modulo aggiornato da `pollDraftState` (memorizza l'ultimo draft). Aggiunti `suggestionCard(suggestion)` (card Tailwind: `#rank champion`, keystone, build_path lista, explanation), `renderSuggestions(output)` (svuota e popola `#suggestions`), `requestSuggestions()` (guardia no draft -> no-op; `fetch POST /api/suggest` con `latestDraftState`; non-2xx/errore -> non-crash, UX completa = T49/T49b). `start()` aggancia `click` su `#suggest-button`.
+- `tests/test_main.py`: +1 test `test_static_app_js_has_suggest_wiring` (app.js contiene `/api/suggest`, `"POST"`, `suggest-button`, `addEventListener`, `getElementById("suggestions")`, e i campi champion/keystone/build_path/explanation).
+- `PROMPT_LOG.md`: questa PLOG-055. `BREAKDOWN_STATUS.md`/`README.md`: T48 chiuso, suite 103/103, prossimo T49.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+# smoke reale: uvicorn --port 8101 ; GET /static/app.js
+```
+
+Esiti: suite **103 passed** (102 + 1 T48); smoke reale `/static/app.js` HTTP 200 con `/api/suggest`, `suggest-button`, `getElementById("suggestions")` presenti.
+
+### DoD T48
+
+- Click "Suggerisci ora" -> POST /api/suggest -> 3 card con champion+build+keystone+spiegazione: wiring e render coperti da test/smoke; rendering DOM visivo = CHECK MANUALE via browser (no runtime headless; coerente col DoD del breakdown = osservazione UI, come T47).
+
+### Decisione
+
+- T48 chiuso (codice + verifica automatica). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `static/app.js`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M6b/T49 (`static/app.js`/UI - loading spinner durante la chiamata AI + disclaimer "AI puo sbagliare, decisione finale al giocatore" sempre visibile sopra i suggerimenti).
