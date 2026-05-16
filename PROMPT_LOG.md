@@ -4815,3 +4815,46 @@ Esiti: compile exit 0; suite **84 passed** (83 + 1 T47); smoke reale `GET /stati
 
 - T47 chiuso (codice + runtime automatico). **M6a COMPLETO** (T41-T44, T46, T47). Commit/push NON eseguito: in attesa di ok utente esplicito (pattern stabilito). Working tree accumula `static/app.js`, `app/main.py`, `templates/index.html`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M7a/T50 (estensione `app/db.py` con tabelle `cache` e `history`), primo step di M7a (Cache + History core + SuggestionService) prima di M6b/`/api/suggest`.
+
+## PLOG-2026-05-16-049 - M7a/T50 tabelle cache+history + ERRATA-007/INC-011 (impl + 2 test, runtime VERDE)
+
+- Data: 2026-05-16
+- Scope: T50 (M7a) - estensione `app/db.py` con tabelle `cache` e `history`; documentazione deviazione persistenza single-file (ERRATA-007 / INC-011). T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T50 CHIUSO lato codice + DoD runtime VERDE. Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-117: "ok commit/push poi procedi" (commit T47 + pianificazione T50).
+- CODEX-290: commit/push T47 (1cd8928 su main); piano T50 esposto + nota di coerenza spec (single-DB vs 3 file, deviazione gia in breakdown T10/T50).
+- USER-118: solleva la questione - se deviazione da spec serve errata; chiede parere prima di agire (proseguire crea problemi? la partizione serve per stabilita?).
+- CODEX-291: parere - single-file SQLite funzionalmente equivalente e piu robusto di 3 file; nessun RF/MVP/validatore dipende dalla partizione; §8.3 descrittiva non requisito; raccomandata Opzione A (documentare via ERRATA + proseguire), non Opzione B (refactor 3 file).
+- USER-119: "Si vai con opzione A".
+- CODEX-292: ERRATA-007 + INC-011 aggiunti; implementazione T50 single-DB + 2 test + DoD one-liner reale + questa PLOG-049 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `SPEC_ERRATA.md`: aggiunta ERRATA-007 (persistenza singolo file SQLite `data_dragon.db` con tabelle champions/items/runes/meta/cache/history invece dei 3 file §8.3/§5.3; razionale: equivalenza funzionale, piu robusto/semplice, coerente col breakdown T10/T50; impatto nullo strutturale).
+- `INCIDENTS.md`: aggiunto INC-011 (gap documentale intercettato a T50, severita bassa, RISOLTO con ERRATA-007; decisione utente Opzione A).
+- `app/db.py`: `_utcnow()` helper; modello `CacheEntry` (tabella `cache`: draft_state_hash PK, output_json, model_used, created_at, expires_at); modello `HistoryEntry` (tabella `history`: id PK autoincrement, timestamp, draft_state_json, output_json, model_used, feedback default "unrated"). Nessun campo extra oltre la spec (vincolo T50). `init_db()` invariato (Base.metadata.create_all crea anche le nuove tabelle).
+- `tests/test_db.py` (nuovo): 2 test (init_db crea `cache`/`history` con esattamente le colonne spec via `inspect`; `history.feedback` default "unrated" con insert/cleanup reale).
+- `PROMPT_LOG.md`: questa PLOG-049. `BREAKDOWN_STATUS.md`/`README.md`: T50 chiuso, suite 86/86, prossimo T51, ERRATA-007/INC-011 nei riferimenti.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\db.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+.\.venv\Scripts\python.exe -c "import asyncio; from app.db import init_db; asyncio.run(init_db()); ... sqlite_master"
+```
+
+Esiti: compile exit 0; suite **86 passed** (84 + 2 T50); DoD one-liner reale: `data_dragon.db` contiene `['cache', 'champions', 'history', 'items', 'meta', 'runes']` (unico file, coerente con ERRATA-007).
+
+### DoD T50
+
+- `init_db()` crea le 2 tabelle aggiuntive con gli schemi della spec: VERIFICATO (test inspect colonne + one-liner reale).
+- Nessun campo extra oltre la spec: VERIFICATO (set colonne esatto).
+
+### Decisione
+
+- T50 chiuso (codice + runtime). Deviazione persistenza formalizzata (ERRATA-007/INC-011) prima dell'implementazione, come da decisione utente Opzione A. Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `SPEC_ERRATA.md`, `INCIDENTS.md`, `app/db.py`, `tests/test_db.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M7a/T51 (`CacheService` get/set in `suggestion_service.py`, NON in `ai_client.py` - SoC).

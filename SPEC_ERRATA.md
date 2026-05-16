@@ -120,3 +120,44 @@ DeepSeek espone un'API OpenAI-compatible: il client SDK esistente funziona cambi
 ### Impatto
 
 Nessun cambiamento strutturale a MVP, RF, architettura, flusso dati o logica di fallback/validazione: cambiano solo endpoint, credenziale e ID modelli. Le DoD runtime AI reali (T27/T31/T35/T58/T62) vanno rieseguite contro DeepSeek dopo che l'utente configura `.env` con `DEEPSEEK_API_KEY`. Il vincolo JSON mode (`response_format=json_object`) e supportato da DeepSeek ma richiede la parola "json" nel prompt: da confermare al primo smoke test reale.
+
+## ERRATA-007 - Persistenza locale su singolo file SQLite invece di tre file separati
+
+- Data: 2026-05-16
+- Sezione spec interessata: 8.3 (tabella "Dati salvati"), 5.3 (riferimento `history.db`), 8.1 (Cache Layer / History Layer)
+- Tipo: scelta operativa di persistenza non strutturale
+- Stato: applicato in `app/db.py` (T10 per Data Dragon; formalizzato a T50 per cache+history)
+- Tracciabilita: INC-011
+
+### Problema
+
+La spec v2.3 §8.3 e §5.3 descrivono tre file SQLite separati:
+
+```text
+datadragon.db   (champions, items, runes, meta)
+cache.db        (cache output AI, chiave hash draft state)
+history.db      (storico consigli + feedback + model_used)
+```
+
+L'implementazione adotta invece un **singolo file SQLite** `data_dragon.db` con un unico engine SQLAlchemy e tutte le tabelle (`champions`, `items`, `runes`, `meta`, e da T50 `cache`, `history`). La scelta era gia implicita nel breakdown operativo v2.1 (T10 fissa "Database file: `data_dragon.db`"; T50 chiede di "**aggiungere** le tabelle a `db.py`", stesso engine), ma a T10 la divergenza non era ancora materiale perche esistevano solo le tabelle Data Dragon. Diventa concreta a T50 con l'aggiunta di `cache` e `history`: questo e il momento corretto per documentarla.
+
+### Aggiornamento
+
+La tabella §8.3 va letta come segue per l'implementazione:
+
+```text
+File unico: data_dragon.db (un solo engine SQLAlchemy async + aiosqlite)
+  - tabelle champions / items / runes / meta   (cache statica Data Dragon)
+  - tabella cache                              (output AI per hash draft state, TTL)
+  - tabella history                            (storico consigli + feedback + model_used)
+```
+
+I nomi logici `cache.db` / `history.db` della spec si intendono come le **tabelle** `cache` / `history` dentro l'unico file.
+
+### Motivazione
+
+SQLite gestisce nativamente piu tabelle in un unico file: e funzionalmente equivalente a tre file (stessa durabilita, integrita e query) ed e piu robusto e semplice di tre engine separati (in SQLite non esistono JOIN cross-database senza `ATTACH`, e tre connessioni aumentano la complessita di lifecycle). Nessun RF, MVP, validatore o criterio di accettazione dipende dalla partizione in file: la §8.3 e una tabella descrittiva, non un requisito. La scelta e inoltre coerente con il breakdown operativo v2.1 (T10/T50), che e l'autorita implementativa.
+
+### Impatto
+
+Nessun cambiamento strutturale a MVP, RF, architettura logica, flusso dati o validatori. Cambia solo il numero di file fisici di persistenza (uno invece di tre), trasparente all'utente e ai consumatori delle tabelle. Lo split in tre file resta possibile in futuro senza impatto sul dominio se mai dovesse servire (non previsto). `.gitignore` gia esclude `*.db`.

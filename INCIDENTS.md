@@ -320,3 +320,23 @@ Conferma il rischio gia previsto nella spec 14.2 ("Schema actions LCU diverso in
 
 - Verifica DoD numerico T40 (`>=5 bans`, `>=10 actions`) rinviata a un draft reale con ban effettivi (umani o tournament draft completo). Da rieseguire `scripts/lcu_live_check.py` in quella sessione.
 - Nessuna modifica strutturale di spec: 14.2 documenta gia il rischio; questa e la sua conferma empirica, non una variazione di perimetro. Nessun ERRATA necessario.
+
+## INC-011 - Gap di documentazione: persistenza single-file vs tre file (intercettato a T50)
+
+- Data rilevazione: 2026-05-16
+- Fase: M7a / T50 (estensione db.py con tabelle cache+history)
+- Severita: bassa (gap documentale, nessun bug, nessun impatto funzionale/stabilita)
+- Stato: RISOLTO con ERRATA-007
+
+### Descrizione
+
+Pianificando T50 e emerso che la spec v2.3 §8.3/§5.3 prevede tre file SQLite separati (`datadragon.db`, `cache.db`, `history.db`), mentre l'implementazione (db.py, single-engine `data_dragon.db`) ne usa uno solo con piu tabelle. La scelta era gia implicita nel breakdown v2.1 (T10 "Database file: data_dragon.db"; T50 "aggiungere tabelle a db.py") e applicata da T10, ma non era stata formalizzata in `SPEC_ERRATA.md`. Sollevato esplicitamente dall'utente prima di procedere con T50.
+
+### Analisi
+
+Single file SQLite con piu tabelle = funzionalmente equivalente a tre file (stessa durabilita/integrita/query), piu robusto e semplice di tre engine. Nessun RF/MVP/validatore/criterio dipende dalla partizione fisica. La spec §8.3 e descrittiva, non un requisito. Proseguire single-DB NON comporta problemi di funzionamento o stabilita; lo split a tre file aggiungerebbe complessita per zero guadagno e contraddirebbe il breakdown.
+
+### Risoluzione
+
+- ERRATA-007 aggiunta in `SPEC_ERRATA.md`: documenta la deviazione non strutturale, razionale e impatto nullo. Decisione utente (2026-05-16): Opzione A (documentare + proseguire single-DB), non Opzione B (refactor a tre file).
+- T50 implementato single-DB come da breakdown. Nessun refactor necessario.
