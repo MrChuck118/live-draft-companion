@@ -117,11 +117,19 @@ function renderSuggestions(output) {
   }
 }
 
+function setSpinner(visible) {
+  const spinner = document.getElementById("loading-spinner");
+  if (spinner) {
+    spinner.classList.toggle("hidden", !visible);
+  }
+}
+
 async function requestSuggestions() {
   if (!latestDraftState) {
-    // No draft captured yet; UX feedback is T49.
+    // No draft captured yet; UX feedback is T49b.
     return;
   }
+  setSpinner(true);
   try {
     const response = await fetch("/api/suggest", {
       method: "POST",
@@ -136,6 +144,8 @@ async function requestSuggestions() {
   } catch (err) {
     // Network down; T49b owns the user-facing error UX.
     console.debug("suggest request failed", err);
+  } finally {
+    setSpinner(false);
   }
 }
 

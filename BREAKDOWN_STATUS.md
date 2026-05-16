@@ -19,8 +19,8 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 - Principio operativo: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback), ERRATA-006
 - Frontend MVP: HTML + Tailwind CDN + Vanilla JS + fetch (ERRATA-002)
-- Suite test: 103/103 PASSED (`pytest tests/`)
-- Prossimo task tecnico: M6b/T49 (loading spinner + disclaimer). M6a + M7a COMPLETI; M6b IN CORSO (T45+T48 chiusi). M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
+- Suite test: 105/105 PASSED (`pytest tests/`)
+- Prossimo task tecnico: M6b/T49b (error banner + stato errori UI/backend, Must). M6a + M7a COMPLETI; M6b IN CORSO (T45+T48+T49 chiusi). M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
 
 ## Avanzamento per modulo
 
@@ -33,7 +33,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 | M4 FileProvider (T32-T35) | CHIUSO lato codice + RUNTIME CHIUSO | T35 sim mode 5/5 VALID reale su DeepSeek 2026-05-16; scenari PLUMBING (OPEN-002) |
 | M5 LCU Provider (T36-T40) | T36-T39 CHIUSI (codice+live-validati); T40 PARZIALE/IN SOSPESO | vedi sotto |
 | M6a FastAPI base + UI shell | **COMPLETO** (T41-T44+T46+T47) | main+config, launcher, `GET /`, `GET /api/draft-state`+providers, shell Tailwind, app.js polling 2s |
-| M6b suggest endpoint + UI + errori | IN CORSO: T45+T48 CHIUSI | T45 `POST /api/suggest`; T48 render 3 card; T49 (spinner+disclaimer) + T49b (error banner) da fare |
+| M6b suggest endpoint + UI + errori | IN CORSO: T45+T48+T49 CHIUSI | T45 `POST /api/suggest`; T48 render 3 card; T49 spinner+disclaimer; resta T49b (error banner, Must) |
 | M7a Cache+History+SuggestionService | **COMPLETO** (T50-T53 + T45b) | tabelle single-DB; CacheService; HistoryRepository; SuggestionService orchestratore |
 | M7b storico feedback UI | NON iniziato | |
 | M8 Test sistematici (T57-T65) | NON iniziato | T58/T62 dipendono da OPEN-002 |
@@ -93,13 +93,14 @@ Poi creare `.env` da `.env.example` con `DEEPSEEK_API_KEY` reale (mai in chat, I
 - T53 CHIUSO 2026-05-16 (`HistoryRepository.save`). Commit 2ca52f9 su main.
 - T45b CHIUSO 2026-05-16 (`SuggestionService` orchestratore). **M7a COMPLETO**. Commit 498e63e su main.
 - T45 CHIUSO 2026-05-16 (`POST /api/suggest` sottile -> SuggestionService). Commit 04684a2 su main.
-- T48 CHIUSO 2026-05-16 (`static/app.js`: bottone -> POST /api/suggest -> render 3 card champion/keystone/build/explanation; suite 103/103; DOM visivo = check manuale browser). Commit IN ATTESA di ok utente.
+- T48 CHIUSO 2026-05-16 (`static/app.js` render 3 card). Commit 9726b1e su main.
+- T49 CHIUSO 2026-05-16 (spinner toggle in `finally` durante chiamata AI + disclaimer RF-019 spostato sopra `#suggestions`, non-dismiss; suite 105/105; visivo = check manuale browser). Commit IN ATTESA di ok utente.
 - T40 resta in sospeso ma il breakdown procede.
-- Prossimo task: M6b/T49 (loading spinner durante chiamata AI + disclaimer RF-019 sempre visibile).
+- Prossimo task: M6b/T49b (error banner + stato errori UI/backend, Must non tagliabile, MVP-013/RF-013/022/023/024, spec Â§12).
 
 ## Riferimenti documentali
 
-- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-055).
+- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-056).
 - `INCIDENTS.md`: INC-001..INC-011.
 - `SPEC_ERRATA.md`: ERRATA-001..ERRATA-007.
 - `README.md`: stato sintetico corrente.

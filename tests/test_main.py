@@ -115,6 +115,30 @@ def test_static_app_js_has_suggest_wiring(monkeypatch) -> None:
         assert field in body
 
 
+def test_disclaimer_above_suggestions(monkeypatch) -> None:
+    """DoD T49 / RF-019: disclaimer is present and above the suggestions area."""
+    _mock_lifecycle(monkeypatch)
+
+    with TestClient(main.app) as client:
+        html = client.get("/").text
+
+    assert "Decisione finale al giocatore" in html
+    assert html.index('id="disclaimer"') < html.index('id="suggestions"')
+
+
+def test_app_js_toggles_loading_spinner(monkeypatch) -> None:
+    """DoD T49: spinner shown during the AI call and hidden afterwards."""
+    _mock_lifecycle(monkeypatch)
+
+    with TestClient(main.app) as client:
+        body = client.get("/static/app.js").text
+
+    assert "loading-spinner" in body
+    assert "setSpinner(true)" in body
+    assert "setSpinner(false)" in body
+    assert "finally" in body
+
+
 def _mock_lifecycle(monkeypatch) -> None:
     async def fake_init_db() -> None:
         return None

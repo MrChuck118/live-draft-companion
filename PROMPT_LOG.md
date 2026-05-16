@@ -5103,3 +5103,43 @@ Esiti: suite **103 passed** (102 + 1 T48); smoke reale `/static/app.js` HTTP 200
 
 - T48 chiuso (codice + verifica automatica). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `static/app.js`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M6b/T49 (`static/app.js`/UI - loading spinner durante la chiamata AI + disclaimer "AI puo sbagliare, decisione finale al giocatore" sempre visibile sopra i suggerimenti).
+
+## PLOG-2026-05-16-056 - M6b/T49 loading spinner + disclaimer sopra i suggerimenti (impl + 2 test, VERDE)
+
+- Data: 2026-05-16
+- Scope: T49 (M6b) - spinner durante chiamata AI + disclaimer RF-019 sopra `#suggestions`. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T49 CHIUSO + DoD VERDE (visivo = check manuale browser). Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-132: "ok commit/push, poi procedi con il piano".
+- CODEX-305: commit/push T48 (9726b1e su main); piano T49 esposto (riordino disclaimer sopra suggestions, spinner toggle in finally; error-banner/re-enable = T49b).
+- USER-133: "confermo".
+- CODEX-306: implementazione T49 + 2 test + smoke + questa PLOG-056 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `templates/index.html`: riordinata la sezione suggerimenti -> bottone, `#disclaimer` (statico, non-dismiss, RF-019, ora `mb-3` SOPRA i suggerimenti), `#loading-spinner` (hidden, `mb-3`), `#suggestions`. Nessun elemento nuovo, solo riordino + classi margine.
+- `static/app.js`: helper `setSpinner(visible)` (`classList.toggle("hidden", !visible)`); `requestSuggestions()` ora fa `setSpinner(true)` prima del fetch e `setSpinner(false)` in `finally` (sempre, anche su errore). Commento no-draft aggiornato a T49b. Error-banner/re-enable bottone NON qui (= T49b).
+- `tests/test_main.py`: +2 test (`test_disclaimer_above_suggestions`: testo RF-019 presente e `index('id="disclaimer"') < index('id="suggestions"')`; `test_app_js_toggles_loading_spinner`: app.js contiene `loading-spinner`, `setSpinner(true)`, `setSpinner(false)`, `finally`).
+- `PROMPT_LOG.md`: questa PLOG-056. `BREAKDOWN_STATUS.md`/`README.md`: T49 chiuso, suite 105/105, prossimo T49b.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+# smoke reale: uvicorn --port 8103 ; GET /
+```
+
+Esiti: suite **105 passed** (103 + 2 T49); smoke reale `GET /` HTTP 200 con `#disclaimer` prima di `#suggestions` e testo "Decisione finale al giocatore".
+
+### DoD T49
+
+- Disclaimer "AI puo sbagliare, decisione finale al giocatore" presente e sopra i suggerimenti (RF-019): VERIFICATO (test ordine DOM + smoke reale).
+- Spinner visibile durante la chiamata AI: wiring VERIFICATO (setSpinner true prima del fetch, false in finally); visivo = CHECK MANUALE browser (no runtime headless; coerente col DoD del breakdown, come T47/T48).
+
+### Decisione
+
+- T49 chiuso (codice + verifica automatica). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `templates/index.html`, `static/app.js`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M6b/T49b (error banner + stato errori UI/backend, Must non tagliabile: copre MVP-013, RF-013/RF-022/RF-023/RF-024, spec Â§12).
