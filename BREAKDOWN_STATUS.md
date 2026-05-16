@@ -19,8 +19,8 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 - Principio operativo: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback), ERRATA-006
 - Frontend MVP: HTML + Tailwind CDN + Vanilla JS + fetch (ERRATA-002)
-- Suite test: 83/83 PASSED (`pytest tests/`)
-- Prossimo task tecnico: M6a/T47 (`static/app.js` Vanilla JS polling `/api/draft-state`). T41-T44+T46 CHIUSI. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
+- Suite test: 84/84 PASSED (`pytest tests/`)
+- Prossimo task tecnico: M7a/T50 (`app/db.py` tabelle cache+history). M6a COMPLETO (T41-T44+T46+T47). M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
 
 ## Avanzamento per modulo
 
@@ -32,8 +32,10 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 | M3 Prompt+AIClient (T23-T31) | CHIUSO lato codice + RUNTIME CHIUSO | DoD runtime OPEN-001 (T27/T31) verdi su DeepSeek 2026-05-16 |
 | M4 FileProvider (T32-T35) | CHIUSO lato codice + RUNTIME CHIUSO | T35 sim mode 5/5 VALID reale su DeepSeek 2026-05-16; scenari PLUMBING (OPEN-002) |
 | M5 LCU Provider (T36-T40) | T36-T39 CHIUSI (codice+live-validati); T40 PARZIALE/IN SOSPESO | vedi sotto |
-| M6a/M6b FastAPI+UI+suggest+errori | M6a IN CORSO: T41-T44+T46 CHIUSI (codice+runtime) | T41 main+config; T42 launcher; T43 `GET /`; T44 `GET /api/draft-state`+providers; T46 shell index.html Tailwind; T47 da fare |
-| M7a/M7b Cache+History+SuggestionService+storico | NON iniziato | |
+| M6a FastAPI base + UI shell | **COMPLETO** (T41-T44+T46+T47) | main+config, launcher, `GET /`, `GET /api/draft-state`+providers, shell Tailwind, app.js polling 2s |
+| M6b suggest endpoint + UI + errori | NON iniziato | dopo M7a (flusso spec: cache+SuggestionService prima di `/api/suggest`) |
+| M7a Cache+History+SuggestionService | NON iniziato | prossimo: T50 tabelle cache+history |
+| M7b storico feedback UI | NON iniziato | |
 | M8 Test sistematici (T57-T65) | NON iniziato | T58/T62 dipendono da OPEN-002 |
 | M9 Demo+packaging (T66-T71) | NON iniziato | |
 | M10 Presentazione (T72-T73) | NON iniziato | |
@@ -83,13 +85,14 @@ Poi creare `.env` da `.env.example` con `DEEPSEEK_API_KEY` reale (mai in chat, I
 - T42 CHIUSO 2026-05-16 (`launcher.py` in-process uvicorn + port fallback 8000->8003 + auto-browser; smoke reale: 8000 free->8000, 8000 busy->8001, HTTP 200). Commit 387b9f9 su main.
 - T43 CHIUSO 2026-05-16 (`GET /` -> `templates/index.html` minimale; smoke reale GET / HTTP 200 text/html "In attesa del client LoL"). Commit e552945 su main.
 - T44 CHIUSO 2026-05-16 (`GET /api/draft-state` + `app/providers.py` factory sim/live; smoke reale sim HTTP 200 application/json DraftState completo). Commit dff2c51 su main.
-- T46 CHIUSO 2026-05-16 (`templates/index.html` shell completo Tailwind CDN: header/status/error-banner hidden/draft-grid/suggestions/history; suite 83/83; smoke reale GET / HTTP 200). Commit IN ATTESA di ok utente.
+- T46 CHIUSO 2026-05-16 (`templates/index.html` shell completo Tailwind CDN). Commit d096474 su main.
+- T47 CHIUSO 2026-05-16 (`static/app.js` Vanilla JS polling 2s + mount StaticFiles + wiring shell; suite 84/84; smoke reale /static/app.js HTTP 200 text/javascript). **M6a COMPLETO**. DOM visivo = check manuale browser. Commit IN ATTESA di ok utente.
 - T40 resta in sospeso ma il breakdown procede.
-- Prossimo task: M6a/T47 (`static/app.js` Vanilla JS polling `/api/draft-state`).
+- Prossimo task: M7a/T50 (`app/db.py` tabelle `cache` + `history`).
 
 ## Riferimenti documentali
 
-- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-047).
+- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-048).
 - `INCIDENTS.md`: INC-001..INC-010.
 - `SPEC_ERRATA.md`: ERRATA-001..ERRATA-006.
 - `README.md`: stato sintetico corrente.

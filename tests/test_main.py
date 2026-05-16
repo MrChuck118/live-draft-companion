@@ -79,6 +79,22 @@ def test_index_shell_has_all_containers(monkeypatch) -> None:
     # Error banner present but initially hidden (logic in T49b).
     assert 'id="error-banner"' in html
     assert "hidden" in html.split('id="error-banner"')[1].split(">")[0]
+    # JS wired into the shell (T47).
+    assert '/static/app.js' in html
+
+
+def test_static_app_js_served(monkeypatch) -> None:
+    """DoD T47: static mount serves app.js with the 2s draft-state polling."""
+    _mock_lifecycle(monkeypatch)
+
+    with TestClient(main.app) as client:
+        response = client.get("/static/app.js")
+
+    assert response.status_code == 200
+    assert "javascript" in response.headers["content-type"]
+    body = response.text
+    assert "/api/draft-state" in body
+    assert "2000" in body
 
 
 def _mock_lifecycle(monkeypatch) -> None:

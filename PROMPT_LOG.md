@@ -4773,3 +4773,45 @@ Esiti: suite **83 passed** (82 + 1 T46); smoke reale `GET /` -> HTTP 200, presen
 
 - T46 chiuso (codice + runtime). Commit/push NON eseguito: in attesa di ok utente esplicito (pattern stabilito). Working tree accumula `templates/index.html`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M6a/T47 (`static/app.js` - Vanilla JS che polla `/api/draft-state` ogni 2s e aggiorna la griglia draft; ERRATA-002).
+
+## PLOG-2026-05-16-048 - M6a/T47 Vanilla JS draft-state polling + static mount (impl + 2 test, runtime VERDE) - M6a COMPLETO
+
+- Data: 2026-05-16
+- Scope: T47 (M6a) - `static/app.js` Vanilla JS polling + mount StaticFiles + wiring shell. Chiude M6a. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T47 CHIUSO lato codice + DoD runtime VERDE (parte automatica; DOM visivo = check manuale browser). Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-115: "ok commit/push poi procedi con il piano".
+- CODEX-288: commit/push T46 (d096474 su main); piano T47 esposto (app.js + static mount + wiring + 2 test + verifica + docs; nota onesta: niente browser headless, DOM visivo = check manuale).
+- USER-116: "ok procedi".
+- CODEX-289: implementazione T47 + 2 test + smoke runtime reale + questa PLOG-048 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `static/app.js` (nuovo): Vanilla JS + fetch (ERRATA-002, no framework/build). `POLL_INTERVAL_MS=2000`; `pollDraftState()` GET `/api/draft-state` -> aggiorna `#status`, `#bans-list`, `#ally-team`, `#enemy-team` (team ordinati per ruolo TOP..SUPPORT, champion null -> "—"). Non-2xx / errore rete: non-crash, retry al tick successivo (UX completa = T49b). `setInterval` 2s; start su DOMContentLoaded.
+- `app/main.py`: import `StaticFiles`; `app.mount("/static", StaticFiles(directory="static"))` (path relativo CWD; PyInstaller sys._MEIPASS RINVIATO a T66, commento esplicito).
+- `templates/index.html`: aggiunto `<script src="/static/app.js" defer></script>` prima di `</body>` (wiring JS nello shell, parte di T47).
+- `tests/test_main.py`: esteso `test_index_shell_has_all_containers` (assert `/static/app.js` referenziato) + nuovo `test_static_app_js_served` (GET /static/app.js -> 200 javascript, contiene `/api/draft-state` e `2000`).
+- `PROMPT_LOG.md`: questa PLOG-048. `BREAKDOWN_STATUS.md`/`README.md`: T47 chiuso, M6a COMPLETO, suite 84/84, prossimo M7a/T50.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\main.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+# smoke reale: DRAFT_PROVIDER_MODE=sim ... uvicorn --port 8088
+#   GET /static/app.js ; GET / (wiring) ; /api/draft-state gia verde T44
+```
+
+Esiti: compile exit 0; suite **84 passed** (83 + 1 T47); smoke reale `GET /static/app.js` -> HTTP 200 `text/javascript`, contiene `POLL_INTERVAL_MS = 2000` e `fetch("/api/draft-state"`; `GET /` referenzia `/static/app.js`.
+
+### DoD T47
+
+- JS polla `/api/draft-state` ogni 2s e aggiorna la griglia draft: VERIFICATO lato codice + asset servito; aggiornamento DOM visivo (sim mode mostra draft, cambio file -> update <=2s) = CHECK MANUALE via browser (no runtime headless qui; coerente col DoD del breakdown che e osservazione UI manuale).
+
+### Decisione
+
+- T47 chiuso (codice + runtime automatico). **M6a COMPLETO** (T41-T44, T46, T47). Commit/push NON eseguito: in attesa di ok utente esplicito (pattern stabilito). Working tree accumula `static/app.js`, `app/main.py`, `templates/index.html`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M7a/T50 (estensione `app/db.py` con tabelle `cache` e `history`), primo step di M7a (Cache + History core + SuggestionService) prima di M6b/`/api/suggest`.
