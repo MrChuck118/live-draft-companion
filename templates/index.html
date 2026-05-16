@@ -4,11 +4,72 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Live Draft Companion</title>
+    <!-- Tailwind via CDN (ERRATA-002: no build step). -->
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body>
-    <main>
-      <h1>Live Draft Companion</h1>
-      <p id="status">In attesa del client LoL</p>
-    </main>
+  <body class="min-h-screen bg-slate-900 text-slate-100 antialiased">
+    <div class="mx-auto max-w-5xl px-4 py-6">
+      <!-- Header -->
+      <header class="mb-6 flex items-center justify-between border-b border-slate-700 pb-4">
+        <div>
+          <h1 class="text-2xl font-bold">Live Draft Companion</h1>
+          <p class="text-sm text-slate-400">Assistente AI per il draft di League of Legends</p>
+        </div>
+        <div id="connection" class="text-right">
+          <span class="text-xs uppercase tracking-wide text-slate-500">Stato</span>
+          <p id="status" class="font-semibold text-amber-400">In attesa del client LoL</p>
+        </div>
+      </header>
+
+      <!-- Error banner (logica in T49b; inizialmente nascosto) -->
+      <div
+        id="error-banner"
+        class="hidden mb-6 rounded-lg border border-red-500 bg-red-950/60 px-4 py-3 text-sm text-red-200"
+        role="alert"
+      >
+        <span id="error-message"></span>
+      </div>
+
+      <!-- Griglia draft (popolata da T47) -->
+      <section id="draft-grid" class="mb-6 grid gap-4 md:grid-cols-3">
+        <div class="rounded-lg bg-slate-800 p-4">
+          <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Ban</h2>
+          <ul id="bans-list" class="space-y-1 text-sm text-slate-300"></ul>
+        </div>
+        <div class="rounded-lg bg-slate-800 p-4">
+          <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-400">Team alleato</h2>
+          <ul id="ally-team" class="space-y-1 text-sm text-slate-300"></ul>
+        </div>
+        <div class="rounded-lg bg-slate-800 p-4">
+          <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-rose-400">Team avversario</h2>
+          <ul id="enemy-team" class="space-y-1 text-sm text-slate-300"></ul>
+        </div>
+      </section>
+
+      <!-- Area suggerimenti AI (bottone wired in T48; spinner/disclaimer in T49) -->
+      <section id="suggestions-section" class="mb-6 rounded-lg bg-slate-800 p-4">
+        <div class="mb-3 flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Suggerimenti</h2>
+          <button
+            id="suggest-button"
+            type="button"
+            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-500"
+          >
+            Suggerisci ora
+          </button>
+        </div>
+        <div id="loading-spinner" class="hidden text-sm text-slate-400">Generazione in corso...</div>
+        <div id="suggestions" class="grid gap-4 md:grid-cols-3"></div>
+        <p id="disclaimer" class="mt-4 text-xs text-slate-500">
+          I suggerimenti sono generati da AI, possono sbagliare. Decisione finale al giocatore.
+        </p>
+      </section>
+
+      <!-- Area storico (popolata da T56) -->
+      <section id="history-section" class="rounded-lg bg-slate-800 p-4">
+        <h2 class="mb-3 text-lg font-semibold">Storico</h2>
+        <ul id="history-list" class="space-y-2 text-sm text-slate-300"></ul>
+      </section>
+    </div>
   </body>
 </html>

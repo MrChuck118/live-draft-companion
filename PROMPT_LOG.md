@@ -4732,3 +4732,44 @@ Esiti: compile exit 0; suite **82 passed** (80 + 2 T44); smoke reale `GET /api/d
 
 - T44 chiuso (codice + runtime). Commit/push NON eseguito: in attesa di ok utente esplicito (pattern stabilito). Working tree accumula `app/providers.py`, `app/main.py`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M6a/T46 (`templates/index.html` completo con Tailwind CDN: header, stato connessione, griglia draft, area suggerimenti, area storico, area error banner nascosta).
+
+## PLOG-2026-05-16-047 - M6a/T46 index.html shell completo Tailwind CDN (impl + 1 test, runtime VERDE)
+
+- Data: 2026-05-16
+- Scope: T46 (M6a) - shell HTML completo Tailwind CDN. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T46 CHIUSO lato codice + DoD runtime VERDE. Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-112: "procedi commit/push e poi pianifica prossima task".
+- CODEX-285: commit/push T44 (dff2c51 su main); piano T46 esposto.
+- USER-113: chiede chiarimento "in che senso nessun JS?" (ERRATA-002 Vanilla JS prioritaria) - sospetto di deviazione dallo stack.
+- CODEX-286: chiarito - ERRATA-002 (Vanilla JS+fetch) pienamente rispettata; "nessun JS in T46" = confine del task: il JS sta in `static/app.js` a T47/T48/T56, non nello shell di T46 (decomposizione del breakdown, coerente con ERRATA-002). Nessun cambio di piano.
+- USER-114: "mea culpa ... procedi come pianificato".
+- CODEX-287: implementazione T46 + 1 test + smoke runtime reale + questa PLOG-047 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `templates/index.html`: da pagina minimale (T43) a shell completo. Tailwind via CDN (`https://cdn.tailwindcss.com`, ERRATA-002 no build step). Sezioni con id: header, `#status` (testo iniziale "In attesa del client LoL" preservato -> test T43 resta verde), `#error-banner` (classe `hidden`, logica T49b), `#draft-grid` con `#bans-list`/`#ally-team`/`#enemy-team`, `#suggestions-section` con `#suggest-button`+`#loading-spinner`(hidden)+`#suggestions`+`#disclaimer` (testo RF-019 statico), `#history-section` con `#history-list`. NESSUN JS (Vanilla JS = T47/T48/T56 in `static/app.js`); bottone/spinner inerti (wiring T48/T49).
+- `tests/test_main.py`: +1 test `test_index_shell_has_all_containers` (Tailwind CDN presente; tutti i container nel DOM; `#error-banner` con `hidden`). Test T43 esistente invariato e verde.
+- `PROMPT_LOG.md`: questa PLOG-047. `BREAKDOWN_STATUS.md`/`README.md`: T46 chiuso, suite 83/83, prossimo T47.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+# smoke reale: uvicorn app.main:app --port 8077 ; GET /
+```
+
+Esiti: suite **83 passed** (82 + 1 T46); smoke reale `GET /` -> HTTP 200, presenti `cdn.tailwindcss.com`, `id="status"`, `id="error-banner"`, `id="suggest-button"`, `id="history-list"` (e gli altri container).
+
+### DoD T46
+
+- Pagina rendered con Tailwind funzionante (CDN caricato): VERIFICATO (smoke reale + test).
+- Tutti i contenitori presenti nel DOM, error banner inizialmente nascosto con `hidden`: VERIFICATO.
+
+### Decisione
+
+- T46 chiuso (codice + runtime). Commit/push NON eseguito: in attesa di ok utente esplicito (pattern stabilito). Working tree accumula `templates/index.html`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M6a/T47 (`static/app.js` - Vanilla JS che polla `/api/draft-state` ogni 2s e aggiorna la griglia draft; ERRATA-002).

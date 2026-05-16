@@ -58,6 +58,29 @@ def test_index_serves_base_html(monkeypatch) -> None:
     assert "In attesa del client LoL" in response.text
 
 
+def test_index_shell_has_all_containers(monkeypatch) -> None:
+    """DoD T46: full Tailwind shell with all section containers in the DOM."""
+    _mock_lifecycle(monkeypatch)
+
+    with TestClient(main.app) as client:
+        html = client.get("/").text
+
+    assert "https://cdn.tailwindcss.com" in html
+    for marker in (
+        'id="status"',
+        'id="bans-list"',
+        'id="ally-team"',
+        'id="enemy-team"',
+        'id="suggestions"',
+        'id="suggest-button"',
+        'id="history-list"',
+    ):
+        assert marker in html, f"missing container {marker}"
+    # Error banner present but initially hidden (logic in T49b).
+    assert 'id="error-banner"' in html
+    assert "hidden" in html.split('id="error-banner"')[1].split(">")[0]
+
+
 def _mock_lifecycle(monkeypatch) -> None:
     async def fake_init_db() -> None:
         return None
