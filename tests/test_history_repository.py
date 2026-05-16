@@ -86,3 +86,40 @@ async def test_saved_json_roundtrips() -> None:
             assert SuggestionOutput.model_validate_json(row.output_json) == output
     finally:
         await _delete(ids)
+
+
+@pytest.mark.asyncio
+async def test_update_feedback_changes_row() -> None:
+    """DoD T54 repository: update feedback to good/bad on an existing row."""
+    await init_db()
+    repo = HistoryRepository()
+    ids: list[int] = []
+    try:
+        history_id = await repo.save(_draft("SUPPORT"), _output(), model_used="t54-model")
+        ids.append(history_id)
+
+        assert await repo.update_feedback(history_id, "good") is True
+        async with AsyncSessionLocal() as session:
+            row = await session.get(HistoryEntry, history_id)
+            assert row is not None
+            assert row.feedback == "good"
+
+        assert await repo.update_feedback(history_id, "bad") is True
+        async with AsyncSessionLocal() as session:
+            row = await session.get(HistoryEntry, history_id)
+            assert row is not None
+            assert row.feedback == "bad"
+    finally:
+        await _delete(ids)
+
+
+@pytest.mark.asyncio
+async def test_update_feedback_missing_or_invalid() -> None:
+    """Missing row returns False; invalid values are rejected defensively."""
+    await init_db()
+    repo = HistoryRepository()
+
+    assert await repo.update_feedback(999_999_999, "good") is False
+
+    with pytest.raises(ValueError):
+        await repo.update_feedback(999_999_999, "unrated")

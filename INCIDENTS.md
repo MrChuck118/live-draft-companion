@@ -346,7 +346,7 @@ Single file SQLite con piu tabelle = funzionalmente equivalente a tre file (stes
 - Data rilevazione: 2026-05-16
 - Fase: ricognizione post-T49b / prima di M7b-T54
 - Severita: bassa-media (blocco di verifica locale, nessuna evidenza di regressione codice)
-- Stato: APERTO - ambiente da ripristinare
+- Stato: RISOLTO 2026-05-16
 
 ### Descrizione
 
@@ -366,13 +366,15 @@ Inoltre `where.exe python` e `where.exe py` non trovano interpreti nella session
 
 ### Impatto
 
-- Blocca la riesecuzione locale di `pytest tests/` su questa macchina finche la venv non viene ricreata o non viene indicato un interprete Python valido.
-- Non invalida l'ultima baseline gia registrata: PLOG-2026-05-16-057 documenta suite **110/110 PASSED** per T49b.
-- Rende rischioso procedere con nuove implementazioni senza prima ripristinare il gate di test.
+- Ha bloccato temporaneamente la riesecuzione locale di `pytest tests/` su questa macchina.
+- Non ha invalidato la baseline gia registrata: PLOG-2026-05-16-057 documenta suite **110/110 PASSED** per T49b.
+- Il gate di test e stato ripristinato prima di chiudere T54.
 
 ### Mitigazione proposta
 
-- Trovare un interprete Python 3.12 valido sulla macchina oppure reinstallarlo.
-- Ricreare `.venv` con quell'interprete e reinstallare `requirements.txt`.
-- Ripopolare `data_dragon.db` se necessario (`populate_cache()`, vedi INC-009).
-- Rieseguire `.\.venv\Scripts\python.exe -m pytest tests/` prima di chiudere T54.
+- Scaricato installer ufficiale Python 3.12.10 in `C:\tmp\python-3.12.10-amd64.exe`.
+- Ripristinato il runtime Python 3.12.10 nel percorso atteso dalla venv.
+- Verificato `.\.venv\Scripts\python.exe --version` -> Python 3.12.10.
+- Verificato `.\.venv\Scripts\python.exe -m pip check` -> no broken requirements.
+- Rieseguito `.\.venv\Scripts\python.exe -m pytest tests/` prima di T54 -> **110 passed**.
+- Dopo T54, rieseguita la suite completa -> **115 passed**.

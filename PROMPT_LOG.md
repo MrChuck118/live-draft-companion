@@ -5274,3 +5274,53 @@ Esito: test NON rieseguiti in questa sessione per problema ambiente locale: `.ve
 
 - Nessun test applicativo eseguito in questa sottofase: il blocco e proprio l'ambiente Python (INC-012).
 - Nessuna modifica funzionale applicativa.
+
+## PLOG-2026-05-16-060 - M7b/T54 endpoint feedback history + gate Python ripristinato (impl + 5 test, VERDE)
+
+- Data: 2026-05-16
+- Scope: seconda parte del piano approvato: ripristinare gate Python, implementare T54 (`POST /api/history/feedback`), aggiornare status/documenti.
+- Stato: T54 CHIUSO + DoD VERDE. Commit/push da eseguire subito dopo questa voce.
+
+### Messaggi catalogati
+
+- USER-137: "ok procedi" (approvazione piano PLOG-058).
+- CODEX-317: dopo il commit/push del housekeeping (3ec3a0b), verifica assenza di `python`/`py`/`uv`/`conda` e conferma che `.venv` punta a `C:\Users\ezioc\AppData\Local\Programs\Python\Python312`.
+- CODEX-318: scarica l'installer ufficiale Python 3.12.10 in `C:\tmp\python-3.12.10-amd64.exe`; ripristina il runtime nel percorso atteso dalla venv; verifica fuori sandbox `.venv\Scripts\python.exe --version`.
+- CODEX-319: esegue `pip check` e suite baseline pre-T54: **110 passed**.
+- CODEX-320: implementa `HistoryRepository.update_feedback`, `HistoryFeedbackRequest` e route `POST /api/history/feedback` con contratto errori uniforme T49b.
+- CODEX-321: aggiunge 5 test T54 (2 repository, 3 endpoint) e verifica suite completa **115 passed**.
+- CODEX-322: aggiorna `BREAKDOWN_STATUS.md`, `README.md`, `INCIDENTS.md` e questa PLOG-060.
+
+### File modificati
+
+- `app/suggestion_service.py`: aggiunto `HistoryRepository.update_feedback(history_id, feedback) -> bool`; accetta solo `good|bad`, ritorna `False` se il record non esiste.
+- `app/main.py`: aggiunto `HistoryFeedbackRequest` (`history_id > 0`, `feedback: good|bad`), import `HistoryRepository`, route `POST /api/history/feedback`, error_code `history_not_found` (404) e `history_unavailable` (503).
+- `tests/test_history_repository.py`: +2 test T54 (update `good`/`bad`, missing row/invalid feedback).
+- `tests/test_main.py`: +3 test T54 (POST aggiorna DB reale, body invalido -> 422 `invalid_input`, row assente -> 404 `history_not_found`).
+- `BREAKDOWN_STATUS.md`: T54 chiuso, M7b avviato, suite 115/115, prossimo T55.
+- `README.md`: stato sintetico aggiornato a M7b/T54 chiuso e prossimo T55.
+- `INCIDENTS.md`: INC-012 portato a RISOLTO con dettagli del ripristino Python e test.
+- `PROMPT_LOG.md`: questa PLOG-060.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+.\.venv\Scripts\python.exe -m compileall app\main.py app\suggestion_service.py -q
+.\.venv\Scripts\python.exe -m pytest tests\test_history_repository.py tests\test_main.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: `pip check` OK; baseline pre-T54 **110 passed**; compile exit 0; test mirati **27 passed**; suite finale **115 passed**.
+
+### DoD T54
+
+- POST `/api/history/feedback` con `{history_id, feedback:"good"|"bad"}` aggiorna il record DB: VERIFICATO con endpoint TestClient + lettura reale `history.feedback`.
+- Body invalido/feedback fuori enum -> contratto errori `{error_code,user_message}` 422 `invalid_input`: VERIFICATO.
+- Record inesistente -> 404 controllato `history_not_found`: VERIFICATO.
+
+### Decisione
+
+- T54 chiuso. M7b avviato.
+- Prossimo task: M7b/T55 (`GET /api/history`, ultime 50 entries).

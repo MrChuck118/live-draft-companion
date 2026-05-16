@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
 
 import httpx
 from fastapi import FastAPI, Request
@@ -22,6 +23,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, Field
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import get_settings
 from app.data_dragon import check_patch_and_refresh
@@ -29,7 +32,11 @@ from app.db import init_db
 from app.lcu_provider import LockfileError
 from app.models import DraftState
 from app.providers import get_draft_state_provider
-from app.suggestion_service import SuggestionError, SuggestionService
+from app.suggestion_service import (
+    HistoryRepository,
+    SuggestionError,
+    SuggestionService,
+)
 
 # HTTP status per error_code (4xx user input, 5xx external services). T49b.
 _ERROR_STATUS = {
@@ -37,6 +44,8 @@ _ERROR_STATUS = {
     "ai_unavailable": 503,
     "ai_output_invalid": 502,
     "draft_unavailable": 503,
+    "history_not_found": 404,
+    "history_unavailable": 503,
 }
 _ERRORS_LOG = Path("logs") / "errors.log"
 
@@ -45,6 +54,13 @@ _ERRORS_LOG = Path("logs") / "errors.log"
 templates = Jinja2Templates(directory="templates")
 
 logger = logging.getLogger("live_draft_companion")
+
+
+class HistoryFeedbackRequest(BaseModel):
+    """Body for POST /api/history/feedback (T54)."""
+
+    history_id: int = Field(gt=0)
+    feedback: Literal["good", "bad"]
 
 
 def _configure_logging(level_name: str) -> None:
@@ -179,3 +195,33 @@ async def suggest(draft_state: DraftState):
             else "Servizio AI non disponibile, riprova tra poco."
         )
         return _error_response(error_code, user_message, f"SuggestionError: {exc}")
+
+
+@app.post("/api/history/feedback")
+async def history_feedback(request: HistoryFeedbackRequest):
+    """Update feedback for one history row (M7b/T54)."""
+    try:
+        updated = await HistoryRepository().update_feedback(
+            request.history_id, request.feedback
+        )
+    except ValueError as exc:
+        return _error_response("invalid_input", "Feedback non valido.", str(exc))
+    except SQLAlchemyError as exc:
+        return _error_response(
+            "history_unavailable",
+            "Storico non disponibile, riprova.",
+            f"{type(exc).__name__}: {exc}",
+        )
+
+    if not updated:
+        return _error_response(
+            "history_not_found",
+            "Voce dello storico non trovata.",
+            f"history_id not found: {request.history_id}",
+        )
+
+    return {
+        "status": "ok",
+        "history_id": request.history_id,
+        "feedback": request.feedback,
+    }

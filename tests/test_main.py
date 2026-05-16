@@ -1,5 +1,6 @@
 """Tests for app.main FastAPI app + lifecycle and app.config (M6a/T41)."""
 
+import asyncio
 import logging
 
 from fastapi.testclient import TestClient
@@ -417,3 +418,91 @@ def test_app_js_error_banner_wiring(monkeypatch) -> None:
         "showError(",
     ):
         assert marker in body, f"missing {marker}"
+
+
+# --- T54: POST /api/history/feedback ---
+
+
+def test_history_feedback_endpoint_updates_db(monkeypatch) -> None:
+    """DoD T54: POST /api/history/feedback updates the history row in DB."""
+    _mock_lifecycle(monkeypatch)
+
+    async def seed_history() -> int:
+        from app.db import init_db
+        from app.models import DraftState
+        from app.suggestion_service import HistoryRepository
+
+        await init_db()
+        return await HistoryRepository().save(
+            DraftState.model_validate(_VALID_DRAFT_BODY),
+            _sample_suggestion_output(),
+            model_used="t54-endpoint-test",
+        )
+
+    async def read_feedback(history_id: int) -> str | None:
+        from app.db import AsyncSessionLocal, HistoryEntry
+
+        async with AsyncSessionLocal() as session:
+            row = await session.get(HistoryEntry, history_id)
+            return None if row is None else row.feedback
+
+    async def cleanup(history_id: int) -> None:
+        from app.db import AsyncSessionLocal, HistoryEntry
+
+        async with AsyncSessionLocal() as session:
+            async with session.begin():
+                row = await session.get(HistoryEntry, history_id)
+                if row is not None:
+                    await session.delete(row)
+
+    history_id = asyncio.run(seed_history())
+    try:
+        with TestClient(main.app) as client:
+            response = client.post(
+                "/api/history/feedback",
+                json={"history_id": history_id, "feedback": "good"},
+            )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "status": "ok",
+            "history_id": history_id,
+            "feedback": "good",
+        }
+        assert asyncio.run(read_feedback(history_id)) == "good"
+    finally:
+        asyncio.run(cleanup(history_id))
+
+
+def test_history_feedback_invalid_body_uses_error_contract(monkeypatch) -> None:
+    _mock_lifecycle(monkeypatch)
+
+    with TestClient(main.app) as client:
+        response = client.post(
+            "/api/history/feedback",
+            json={"history_id": 1, "feedback": "unrated"},
+        )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error_code"] == "invalid_input"
+    assert body["user_message"]
+
+
+def test_history_feedback_missing_row_returns_404(monkeypatch) -> None:
+    _mock_lifecycle(monkeypatch)
+
+    class MissingHistoryRepository:
+        async def update_feedback(self, history_id, feedback):
+            return False
+
+    monkeypatch.setattr(main, "HistoryRepository", lambda: MissingHistoryRepository())
+
+    with TestClient(main.app) as client:
+        response = client.post(
+            "/api/history/feedback",
+            json={"history_id": 123, "feedback": "bad"},
+        )
+
+    assert response.status_code == 404
+    assert response.json()["error_code"] == "history_not_found"

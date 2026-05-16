@@ -146,6 +146,23 @@ class HistoryRepository:
             # autoincrement id assigned at flush stays available post-commit.
             return entry.id
 
+    async def update_feedback(self, history_id: int, feedback: str) -> bool:
+        """Update one history row with explicit user feedback (T54).
+
+        Returns False when the row does not exist. Only the UI feedback values
+        are accepted here; "unrated" is reserved for newly saved rows.
+        """
+        if feedback not in {"good", "bad"}:
+            raise ValueError("feedback must be 'good' or 'bad'")
+
+        async with self._session_factory() as session:
+            async with session.begin():
+                entry = await session.get(HistoryEntry, history_id)
+                if entry is None:
+                    return False
+                entry.feedback = feedback
+                return True
+
 
 class SuggestionService:
     """Orchestrates the full suggestion flow (M7a/T45b).
