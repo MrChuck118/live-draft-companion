@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from app.db import AsyncSessionLocal, CacheEntry
-from app.models import SuggestionOutput
+from app.db import AsyncSessionLocal, CacheEntry, HistoryEntry
+from app.models import DraftState, SuggestionOutput
 
 DEFAULT_TTL = timedelta(days=30)  # spec Â§8.3 "Cache output AI ... 30 giorni"
 
@@ -58,3 +58,31 @@ class CacheService:
                         expires_at=now + ttl,
                     )
                 )
+
+
+class HistoryRepository:
+    """Local history of generated suggestions with user feedback (MVP-014, RF-016)."""
+
+    def __init__(self, session_factory=AsyncSessionLocal) -> None:
+        self._session_factory = session_factory
+
+    async def save(
+        self,
+        draft_state: DraftState,
+        output: SuggestionOutput,
+        model_used: str,
+    ) -> int:
+        """Persist one generated suggestion with feedback='unrated'. Returns its id."""
+        entry = HistoryEntry(
+            timestamp=_utcnow_naive(),
+            draft_state_json=draft_state.model_dump_json(),
+            output_json=output.model_dump_json(),
+            model_used=model_used,
+            feedback="unrated",
+        )
+        async with self._session_factory() as session:
+            async with session.begin():
+                session.add(entry)
+            # AsyncSessionLocal uses expire_on_commit=False, so the
+            # autoincrement id assigned at flush stays available post-commit.
+            return entry.id

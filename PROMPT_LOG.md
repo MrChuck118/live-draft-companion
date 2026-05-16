@@ -4939,3 +4939,43 @@ Esiti: cache_service 5/5; suite **91 passed** (89 + 2 T52).
 
 - T52 chiuso (verifica). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `tests/test_cache_service.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M7a/T53 (`HistoryRepository.save(draft_state, output, model_used)`, feedback inizializzato a "unrated", chiamato da SuggestionService a T45b).
+
+## PLOG-2026-05-16-052 - M7a/T53 HistoryRepository.save feedback=unrated (impl + 2 test, VERDE)
+
+- Data: 2026-05-16
+- Scope: T53 (M7a) - `HistoryRepository` in `app/suggestion_service.py`. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T53 CHIUSO + DoD VERDE. Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-124: "ok procedi commit/push poi pianifica".
+- CODEX-297: commit/push T52 (2a93b59 su main); piano T53 esposto (HistoryRepository in suggestion_service.py, save->id, 2 test).
+- USER-125: "ok procedi".
+- CODEX-298: implementazione T53 + 2 test + verifica + questa PLOG-052 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `app/suggestion_service.py`: import `HistoryEntry`, `DraftState`. Classe `HistoryRepository(session_factory=AsyncSessionLocal)`; `async save(draft_state, output, model_used) -> int`: inserisce `HistoryEntry` con `timestamp=_utcnow_naive()`, `draft_state_json`/`output_json` via `model_dump_json()`, `model_used`, `feedback="unrated"`; ritorna `entry.id` (utile a T54). Commento: `expire_on_commit=False` rende l'id disponibile post-commit senza refresh.
+- `tests/test_history_repository.py` (nuovo): 2 test con cleanup per id: `test_save_three_rows_unrated_with_model_used` (3 save -> 3 id distinti, ogni riga `feedback=unrated` + `model_used` valorizzato = DoD esatto); `test_saved_json_roundtrips` (`draft_state_json`/`output_json` ri-parsano in DraftState/SuggestionOutput uguali agli originali).
+- `PROMPT_LOG.md`: questa PLOG-052. `BREAKDOWN_STATUS.md`/`README.md`: T53 chiuso, suite 93/93, prossimo T45b.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\suggestion_service.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: compile exit 0; suite **93 passed** (91 + 2 T53).
+
+### DoD T53
+
+- Dopo 3 chiamate diverse, 3 righe in history con `feedback="unrated"` e `model_used` valorizzato: VERIFICATO.
+- (bonus) JSON salvati ri-parsabili nei modelli: VERIFICATO.
+- Chiamata da `SuggestionService`: wiring rinviato a T45b (come da breakdown).
+
+### Decisione
+
+- T53 chiuso. **M7a core (T50-T53) completo**; resta T45b (orchestratore). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `app/suggestion_service.py`, `tests/test_history_repository.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M7a/T45b (`SuggestionService` orchestratore: DraftStateHash -> CacheService -> PromptBuilder -> AIClient chain -> Validators -> HistoryRepository; cache miss/hit, log; dipende da T25/T29/T30/T51/T52/T53).
