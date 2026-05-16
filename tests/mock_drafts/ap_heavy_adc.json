@@ -1,0 +1,21 @@
+{
+  "patch": "16.10.1",
+  "user_role": "ADC",
+  "bans": ["Draven", "Samira", "Nilah", "Kalista", "Tristana"],
+  "enemy_team": [
+    {"role": "TOP", "champion": "Gragas"},
+    {"role": "JUNGLE", "champion": "Diana"},
+    {"role": "MID", "champion": "LeBlanc"},
+    {"role": "ADC", "champion": "Ziggs"},
+    {"role": "SUPPORT", "champion": "Seraphine"}
+  ],
+  "ally_team": [
+    {"role": "TOP", "champion": "Darius"},
+    {"role": "JUNGLE", "champion": "Wukong"},
+    {"role": "MID", "champion": "Galio"},
+    {"role": "ADC", "champion": null},
+    {"role": "SUPPORT", "champion": "Leona"}
+  ],
+  "actions": [],
+  "local_player_cell_id": 3
+}

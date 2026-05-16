@@ -1,0 +1,17 @@
+{
+  "patch": "16.10.1",
+  "user_role": "JUNGLE",
+  "bans": ["Graves", "Kindred", "Nidalee", "Elise", "Rek'Sai"],
+  "enemy_team": [
+    {"role": "TOP", "champion": "Aatrox"}
+  ],
+  "ally_team": [
+    {"role": "TOP", "champion": "Ornn"},
+    {"role": "JUNGLE", "champion": null},
+    {"role": "MID", "champion": null},
+    {"role": "ADC", "champion": null},
+    {"role": "SUPPORT", "champion": null}
+  ],
+  "actions": [],
+  "local_player_cell_id": 1
+}

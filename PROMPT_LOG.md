@@ -5413,3 +5413,64 @@ Esiti: `node --check` exit 0; test mirati **26 passed**; suite completa **119 pa
 
 - T56 chiuso. **M7b COMPLETO** (T54-T56).
 - Prossimo task: M8/T57 (15 scenari di test in `tests/mock_drafts/`; OPEN-002 resta rilevante per T58/T62).
+
+## PLOG-2026-05-16-063 - M8/T57 15 mock draft scenarios (impl + test, VERDE)
+
+- Data: 2026-05-16
+- Scope: T57 (M8) - estendere `tests/mock_drafts/` da 5 a 15 scenari JSON caricabili con `FileProvider`, con copertura ruoli/archetipi/edge richiesti dal breakdown.
+- Stato: T57 CHIUSO + DoD VERDE. Commit/push da eseguire subito dopo questa voce.
+
+### Messaggi catalogati
+
+- USER-140: "ok procedi e non dimenticarti dei paletti imposti da me" (procedere dal prossimo task, rispettando prompt log, incidents reali, breakdown/status, no invenzioni).
+- CODEX-331: conferma repo pulita, prossimo task M8/T57, legge breakdown T57, `FileProvider`, scenari esistenti e test `test_file_provider.py`.
+- CODEX-332: aggiunge 10 scenari JSON mantenendo lo schema `DraftState`, per arrivare a 15 file.
+- CODEX-333: aggiorna `tests/test_file_provider.py` con caricamento dinamico di tutti i JSON, controllo 15 scenari, 3 per ruolo e pattern richiesti.
+- CODEX-334: aggiorna `tests/mock_drafts/README.md`, esegue test mirati e suite completa, aggiorna status/README/PLOG.
+
+### File creati/modificati
+
+- Nuovi scenari:
+  - `tests/mock_drafts/split_damage_top.json`
+  - `tests/mock_drafts/ap_heavy_jungle.json`
+  - `tests/mock_drafts/balanced_jungle.json`
+  - `tests/mock_drafts/early_pick_jungle.json`
+  - `tests/mock_drafts/ap_heavy_adc.json`
+  - `tests/mock_drafts/balanced_adc.json`
+  - `tests/mock_drafts/aggressive_bans_adc.json`
+  - `tests/mock_drafts/ap_heavy_support.json`
+  - `tests/mock_drafts/balanced_support.json`
+  - `tests/mock_drafts/meta_picks_out_mid.json`
+- `tests/mock_drafts/README.md`: aggiornato da 5 a 15 scenari; mantiene nota OPEN-002: sono scenari PLUMBING/strutturali, non i dati reali del benchmark 09/05.
+- `tests/test_file_provider.py`: test parametrico dinamico su tutti i JSON; +test T57 su 15 file e distribuzione 3 per ruolo; +test pattern nomi per AD-heavy/AP-heavy/balanced/first pick/last pick/aggressive bans/meta picks out.
+- `BREAKDOWN_STATUS.md`: T57 chiuso, suite 131/131, prossimo T58 con caveat OPEN-002.
+- `README.md`: stato sintetico aggiornato a M8 in corso/T57 chiuso.
+- `PROMPT_LOG.md`: questa PLOG-063.
+
+### Copertura scenari
+
+- Ruoli: TOP/JUNGLE/MID/ADC/SUPPORT = 3 scenari ciascuno.
+- Archetipi: AD-heavy, AP-heavy, balanced, split-damage.
+- Edge: first pick, last pick, early pick, ban list aggressiva, meta picks out.
+- Nota importante: i contenuti sono strutturali/PLUMBING. Non sostituiscono i dati reali OPEN-002 del benchmark corso.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests\test_file_provider.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: test mirati **20 passed**; suite completa **131 passed**.
+
+### DoD T57
+
+- 15 file `.json` in `tests/mock_drafts/`: VERIFICATO.
+- Ognuno caricabile con `FileProvider`: VERIFICATO.
+- Copertura ruoli/archetipi/edge richiesta: VERIFICATO/documentato.
+- Nessun incidente reale emerso: `INCIDENTS.md` non modificato.
+
+### Decisione
+
+- T57 chiuso. M8 avviato.
+- Prossimo task: M8/T58 (`scripts/benchmark_30_calls.py`, 30 chiamate sim mode). Caveat: significativita benchmark reale resta subordinata a OPEN-002.

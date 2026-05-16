@@ -1,0 +1,21 @@
+{
+  "patch": "16.10.1",
+  "user_role": "SUPPORT",
+  "bans": ["Morgana", "Lux", "Zyra", "Brand", "Vel'Koz"],
+  "enemy_team": [
+    {"role": "TOP", "champion": "Mordekaiser"},
+    {"role": "JUNGLE", "champion": "Karthus"},
+    {"role": "MID", "champion": "Vex"},
+    {"role": "ADC", "champion": "Seraphine"},
+    {"role": "SUPPORT", "champion": "Zyra"}
+  ],
+  "ally_team": [
+    {"role": "TOP", "champion": "Olaf"},
+    {"role": "JUNGLE", "champion": "Lee Sin"},
+    {"role": "MID", "champion": "Yasuo"},
+    {"role": "ADC", "champion": "Samira"},
+    {"role": "SUPPORT", "champion": null}
+  ],
+  "actions": [],
+  "local_player_cell_id": 4
+}

@@ -1,0 +1,21 @@
+{
+  "patch": "16.10.1",
+  "user_role": "ADC",
+  "bans": ["Caitlyn", "Jinx", "Aphelios", "Varus", "Ashe"],
+  "enemy_team": [
+    {"role": "TOP", "champion": "Gnar"},
+    {"role": "JUNGLE", "champion": "Sejuani"},
+    {"role": "MID", "champion": "Taliyah"},
+    {"role": "ADC", "champion": "Xayah"},
+    {"role": "SUPPORT", "champion": "Rakan"}
+  ],
+  "ally_team": [
+    {"role": "TOP", "champion": "Renekton"},
+    {"role": "JUNGLE", "champion": "Maokai"},
+    {"role": "MID", "champion": "Azir"},
+    {"role": "ADC", "champion": null},
+    {"role": "SUPPORT", "champion": "Thresh"}
+  ],
+  "actions": [],
+  "local_player_cell_id": 3
+}
