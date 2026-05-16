@@ -4858,3 +4858,44 @@ Esiti: compile exit 0; suite **86 passed** (84 + 2 T50); DoD one-liner reale: `d
 
 - T50 chiuso (codice + runtime). Deviazione persistenza formalizzata (ERRATA-007/INC-011) prima dell'implementazione, come da decisione utente Opzione A. Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `SPEC_ERRATA.md`, `INCIDENTS.md`, `app/db.py`, `tests/test_db.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M7a/T51 (`CacheService` get/set in `suggestion_service.py`, NON in `ai_client.py` - SoC).
+
+## PLOG-2026-05-16-050 - M7a/T51 CacheService get/set in suggestion_service.py (impl + 3 test, runtime VERDE)
+
+- Data: 2026-05-16
+- Scope: T51 (M7a) - `CacheService` in `app/suggestion_service.py`. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T51 CHIUSO lato codice + DoD VERDE. Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-120: "ok si procedi commit/push e poi andiamo con il piano".
+- CODEX-293: commit/push T50 (92697ce su main); piano T51 esposto (CacheService in suggestion_service.py, nota datetime naive, 3 test).
+- USER-121: "ok procedi".
+- CODEX-294: implementazione T51 + 3 test; fix DeprecationWarning `datetime.utcnow()` -> `datetime.now(timezone.utc).replace(tzinfo=None)`; suite 89/89; questa PLOG-050 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `app/suggestion_service.py` (nuovo): docstring chiarisce che T45b aggiungera SuggestionService allo stesso modulo. `DEFAULT_TTL=timedelta(days=30)` (spec §8.3). `_utcnow_naive()` (UTC naive, no deprecation: `datetime.now(timezone.utc).replace(tzinfo=None)`; commento sul perche naive: SQLite legge naive, confronto naive-naive evita TypeError). `CacheService(session_factory=AsyncSessionLocal)`; `get(hash)` -> None se assente o `expires_at <= now`, altrimenti `SuggestionOutput.model_validate_json`; `set(hash, output, model_used, ttl=30gg)` -> `session.merge` upsert con created_at/expires_at espliciti. CacheService NON in ai_client.py (SoC, breakdown v2.1).
+- `tests/test_cache_service.py` (nuovo): 3 test su AsyncSessionLocal reale con cleanup (hash dedicato `t51-test-hash-do-not-collide`): get assente -> None; set->get roundtrip (model_dump uguale); entry scaduto (ttl=-1s) -> None.
+- `PROMPT_LOG.md`: questa PLOG-050. `BREAKDOWN_STATUS.md`/`README.md`: T51 chiuso, suite 89/89, prossimo T52.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale; il fix deprecation e codice nuovo dello stesso task, non un incidente).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\suggestion_service.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: compile exit 0; suite **89 passed** (86 + 3 T51), 0 warning (DeprecationWarning rimosso).
+
+### DoD T51
+
+- `get(known_hash)` -> SuggestionOutput se presente, None se assente: VERIFICATO.
+- `set(...)` poi `get(...)` -> stesso oggetto: VERIFICATO (model_dump uguale).
+- Entry scaduto -> None (TTL rispettato): VERIFICATO (bonus oltre DoD).
+- Integrazione cache-hit a livello SuggestionService: rinviata al DoD di T45b (come da breakdown).
+
+### Decisione
+
+- T51 chiuso. Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `app/suggestion_service.py`, `tests/test_cache_service.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M7a/T52 (salvataggio cache post-chiamata - in larga parte coperto da `CacheService.set`; verifica integrazione TTL 30gg + persistenza a restart).
