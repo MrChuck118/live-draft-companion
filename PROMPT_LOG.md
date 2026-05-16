@@ -5251,3 +5251,26 @@ Esito: test NON rieseguiti in questa sessione per problema ambiente locale: `.ve
 1. Prima correzione documentale: aggiornare `BREAKDOWN_STATUS.md`, `README.md`, e `INCIDENTS.md`/INC-004 o nuovo INC-012 per il problema Python/venv; poi aggiornare `PROMPT_LOG.md` e commit/push della sola documentazione se approvato.
 2. Gate tecnico: ripristinare o confermare un interprete Python valido prima di implementare T54, per poter rieseguire la suite.
 3. Dopo approvazione: implementare T54 in modo sottile e coerente con T49b (`HistoryRepository` update + route `POST /api/history/feedback` + contratto errori + test mirati), poi aggiornare status/log/README e commit/push.
+
+## PLOG-2026-05-16-059 - Housekeeping documentale post-ricognizione approvato
+
+- Data: 2026-05-16
+- Scope: prima parte del piano approvato dall'utente: riallineare documentazione senza implementare ancora funzionalita.
+- Stato: modifiche documentali pronte per commit/push; gate Python ancora da risolvere prima di T54.
+
+### Messaggi catalogati
+
+- USER-137: "ok procedi" (approva il piano esposto in PLOG-058: housekeeping documentale, gate Python, poi T54).
+- CODEX-316: aggiorna `BREAKDOWN_STATUS.md`, `README.md`, `INCIDENTS.md` e questa voce `PROMPT_LOG.md`.
+
+### File modificati
+
+- `BREAKDOWN_STATUS.md`: suite attesa riallineata a 110/110; T49b aggiornato con commit `04a14fa`; ultimo prompt log aggiornato; aggiunto riferimento a INC-012; README/status stale corretto nei riferimenti operativi.
+- `README.md`: rimosse frasi stale "M6a IN CORSO" / "M7a IN CORSO"; stato sintetizzato a M6a/M6b/M7a completi, prossimo T54; aggiunta nota su venv/Python rotto.
+- `INCIDENTS.md`: aggiunto INC-012 (venv locale punta a Python 3.12 non presente; `python`/`py` assenti da PATH; test locali bloccati finche l'ambiente non viene ripristinato).
+- `PROMPT_LOG.md`: questa PLOG-059.
+
+### Verifiche
+
+- Nessun test applicativo eseguito in questa sottofase: il blocco e proprio l'ambiente Python (INC-012).
+- Nessuna modifica funzionale applicativa.

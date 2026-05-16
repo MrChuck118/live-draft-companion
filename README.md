@@ -13,7 +13,7 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 - Modalita operativa: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback). Strategia A/B OpenRouter superata (vedi ERRATA-006, 2026-05-15)
 - Frontend MVP: HTML, Tailwind CDN, Vanilla JS + fetch
-- Stato codice applicativo: M3, M4 chiusi; M5/T36-T39 chiusi lato codice E validati live su PC casa (lockfile/psutil su path reale E:\, auth, gameflow, champ-select parsing, mapping championId->nome, privacy 10.1). DoD runtime OPEN-001 (T27/T31/T35) CHIUSE su DeepSeek 2026-05-16 (5/5 sim VALID). M6a IN CORSO: T41 CHIUSO (`app/main.py` FastAPI + lifecycle, `app/config.py` pydantic-settings; uvicorn runtime VERDE, log `App ready`), T42 CHIUSO (`launcher.py` in-process uvicorn + port fallback 8000->8003 + auto-browser; smoke reale: 8000 free->8000, busy->8001, HTTP 200), T43 CHIUSO (`GET /` -> `templates/index.html` minimale; smoke reale GET / HTTP 200 "In attesa del client LoL"), T44 CHIUSO (`GET /api/draft-state` + `app/providers.py` factory sim/live; smoke reale sim HTTP 200 application/json DraftState completo), T46 CHIUSO (`templates/index.html` shell completo Tailwind CDN), T47 CHIUSO (`static/app.js` Vanilla JS polling 2s + mount StaticFiles). **M6a COMPLETO** (T41-T44+T46+T47). M7a IN CORSO: T50 CHIUSO (tabelle `cache`+`history` single-DB; ERRATA-007/INC-011), T51 CHIUSO (`CacheService` get/set in `suggestion_service.py`, TTL 30gg), T52 CHIUSO (verifica salvataggio cache: TTL 30gg + persistenza su disco/restart), T53 CHIUSO (`HistoryRepository.save` feedback=unrated + model_used), T45b CHIUSO (`SuggestionService` orchestratore hash/cache/prompt/AI-chain/validate/save). **M7a COMPLETO**. **M6b COMPLETO**: T45 (`POST /api/suggest` sottile), T48 (render 3 card), T49 (spinner + disclaimer RF-019), T49b (contratto errori uniforme `{error_code,user_message}` + banner UI + log ERROR `logs/errors.log`). Suite 110/110 PASSED
+- Stato codice applicativo: M3 e M4 chiusi; M5/T36-T39 chiusi lato codice e validati live su PC casa; M6a COMPLETO; M7a COMPLETO; M6b COMPLETO. Ultima suite valida: 110/110 PASSED (`pytest tests/`, PLOG-2026-05-16-057). Nota ambiente: nella sessione post-T49b la venv locale punta a un interprete Python non piu presente; vedere INC-012 prima di rieseguire i test su questa macchina.
 - M5/T40 IN SOSPESO: integrazione live validata, ma DoD numerico (>=5 bans, >=10 actions) non riproducibile in custom-vs-bot (INC-010, conferma spec 14.2/INC-001); da rieseguire `scripts/lcu_live_check.py` in un draft reale con ban. Mitigazione gia attiva (sim mode 5/5). Il breakdown procede comunque (scelta utente)
 - Prossimo task tecnico: M7b/T54 (`POST /api/history/feedback`); chiusura T40 quando disponibile un draft reale con ban
 - Stato dettagliato e cose in sospeso: vedi `BREAKDOWN_STATUS.md`
@@ -65,6 +65,8 @@ pip install -r requirements.txt
 copy .env.example .env
 python -c "import asyncio; from app.data_dragon import populate_cache; asyncio.run(populate_cache())"
 ```
+
+Se `python`/`py` non sono nel PATH o la venv punta a un interprete rimosso, ricreare `.venv` con un Python 3.12 valido prima dei test (vedi INC-004 e INC-012).
 
 Poi configurare `DEEPSEEK_API_KEY` in `.env` e scegliere modalita live o simulazione. La key DeepSeek va scritta solo nel file `.env` locale, mai in chat o in file versionati (vedi INC-007).
 
