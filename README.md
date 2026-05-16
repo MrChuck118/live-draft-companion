@@ -13,8 +13,10 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 - Modalita operativa: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback). Strategia A/B OpenRouter superata (vedi ERRATA-006, 2026-05-15)
 - Frontend MVP: HTML, Tailwind CDN, Vanilla JS + fetch
-- Stato codice applicativo: M3, M4 chiusi e M5/T36-T37 chiusi lato codice (T23-T37: prompts, ai_client chain/validation/logging, DraftStateProvider, FileProvider, 5 mock draft, sim mode script, LCU lockfile parser+discovery, lcu_request httpx verify=False privacy-safe). DoD runtime OPEN-001 (T27/T31/T35) CHIUSE su DeepSeek diretto il 2026-05-16 (5/5 sim VALID). Suite 60/60 PASSED
-- Prossimo task tecnico: M5/T38 polling gameflow session (asyncio, ogni 2s) (M5 = Should)
+- Stato codice applicativo: M3, M4 chiusi; M5/T36-T39 chiusi lato codice E validati live su PC casa (lockfile/psutil su path reale E:\, auth, gameflow, champ-select parsing, mapping championId->nome, privacy 10.1). DoD runtime OPEN-001 (T27/T31/T35) CHIUSE su DeepSeek 2026-05-16 (5/5 sim VALID). Suite 69/69 PASSED
+- M5/T40 IN SOSPESO: integrazione live validata, ma DoD numerico (>=5 bans, >=10 actions) non riproducibile in custom-vs-bot (INC-010, conferma spec 14.2/INC-001); da rieseguire `scripts/lcu_live_check.py` in un draft reale con ban. Mitigazione gia attiva (sim mode 5/5)
+- Prossimo task tecnico: chiusura T40 (draft reale), poi M6a/T41 (FastAPI app + lifecycle)
+- Stato dettagliato e cose in sospeso: vedi `BREAKDOWN_STATUS.md`
 - Open issues (da rivedere): OPEN-001 - parte runtime sbloccabile CHIUSA su DeepSeek (T27/T31/T35 verdi, INC-008 risolto, ERRATA-006); residui: revocare la key OpenRouter esposta (INC-007); T58/T62 ancora aperti perche subordinati a OPEN-002. OPEN-002 dati scenario benchmark 09/05 (test_scenarios.md) NON nel repo, utente li aggiunge da casa, nel frattempo scenari plumbing documentati
 
 ## Funzionalita MVP

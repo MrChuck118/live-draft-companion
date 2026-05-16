@@ -4421,3 +4421,143 @@ Esiti: compile exit 0; 9/9 T36+T37 PASSED; git grep nessun match; suite totale 6
 - M5/T37 chiuso lato codice. Verifica live reale in scope T40.
 - Nessun commit/push in questa iterazione (paletto: solo su richiesta utente).
 - Prossimo task tecnico: M5/T38 (task asyncio polling `/lol-gameflow/v1/session` ogni 2s, mantiene `current_phase`), stesso metodo piano->approvazione->implementazione->docs.
+
+## PLOG-2026-05-16-040 - M5/T38 GameflowMonitor polling 2s (impl + 4 test)
+
+- Data: 2026-05-16
+- Scope: implementare solo M5/T38 dopo approvazione del piano.
+- Stato: T38 completato e verificato; suite 64/64 PASSED. Nessun commit (in attesa di richiesta utente).
+
+### Messaggi catalogati
+
+- USER-097: "si procedi con 1 e 2 in ordine".
+- CODEX-266: commit `0985279` (T37 + README + PLOG-039) su main, pushato, locale==remoto; avviso LF->CRLF non bloccante.
+- CODEX-267: espone piano M5/T38.
+- USER-098: "perfetto approvato".
+- CODEX-268: import `asyncio`, classe `GameflowMonitor` in `app/lcu_provider.py`; 4 test in `tests/test_lcu_provider.py`.
+- CODEX-269: prima run 1 fail (`NameError`: `asyncio` non importato nel file di test); fix import `asyncio`; re-run 13/13 lcu_provider, suite 64/64 PASSED.
+
+### File modificati
+
+- `app/lcu_provider.py`: import `asyncio`; classe `GameflowMonitor` con `current_phase`, `poll_once()` (GET `/lol-gameflow/v1/session`, status!=200 o errore LockfileError/httpx.HTTPError o json invalido -> phase None senza crash, RF-022), `run(stop_event, interval=2.0)` (loop con `asyncio.wait_for(stop_event.wait(), timeout=interval)`). Scope T38 stretto: solo gameflow phase, niente champ-select (T39).
+- `tests/test_lcu_provider.py`: import `asyncio`; +4 test (phase aggiornata; non-200 -> None; LockfileError -> None senza crash; run loop -> stop via event). Totale file 13 test.
+- `README.md`: stato codice -> M5/T36-T38 chiusi, suite 64/64; prossimo task -> M5/T39.
+- `PROMPT_LOG.md`: questa PLOG-040.
+- `INCIDENTS.md` / `SPEC_ERRATA.md`: NON modificati. Il NameError test e stato un refuso di import risolto in iterazione, non un incidente reale (nessuna perdita di tempo significativa, nessun cambio di piano).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\lcu_provider.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_lcu_provider.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: compile exit 0; 13/13 lcu_provider PASSED; suite totale 64 passed.
+
+### DoD T38
+
+- `poll_once` aggiorna `current_phase` da risposta gameflow: VERIFICATO (mock ChampSelect).
+- Risposta non-200 / errore LCU -> `current_phase=None` senza crash (RF-022): VERIFICATO.
+- `run` polla e si ferma su stop_event: VERIFICATO (interval=0, 3+ iterazioni, stop).
+- Reale "avvio LoL -> Lobby entro 5s; custom -> ChampSelect": RINVIATO a T40 (piano approvato; client non aperto ora).
+
+### Decisione
+
+- M5/T38 chiuso lato codice. Verifica live reale in scope T40.
+- Nessun commit/push in questa iterazione (paletto: solo su richiesta utente).
+- Prossimo task tecnico: M5/T39 (GET `/lol-champ-select/v1/session`, parsing myTeam/theirTeam/actions/localPlayerCellId -> `DraftState`, senza leggere summoner name, spec 10.1), stesso metodo piano->approvazione->implementazione->docs.
+
+## PLOG-2026-05-16-041 - M5/T39 parse champ-select + LCUProvider (impl + 5 test)
+
+- Data: 2026-05-16
+- Scope: implementare solo M5/T39 dopo approvazione del piano.
+- Stato: T39 completato e verificato; suite 69/69 PASSED. Nessun commit (commit rinviato a fine M5 per decisione utente).
+
+### Messaggi catalogati
+
+- USER-099: "facciamo commit a fine m5 vai con il piano per t39".
+- CODEX-270: espone piano M5/T39 (LCUProvider + parse_champ_select_session, mapping championId->name via Data Dragon, patch da meta, privacy 10.1).
+- USER-100: "approvato procedi".
+- CODEX-271: ispezionati models.py (DraftState/ChampionPick/Action), db.py (Champion.key=id numerico stringa, Champion.name, Meta key='patch'), data_dragon._get_cached_patch, validators pattern AsyncSessionLocal.
+- CODEX-272: esteso `app/lcu_provider.py` (helper role/champion/patch, parse_champ_select_session, LCUProvider); +5 test in `tests/test_lcu_provider.py`.
+- CODEX-273: compile exit 0; lcu_provider 18/18; suite 69/69; `git grep lol-summoner -- *.py` nessun match.
+
+### File modificati
+
+- `app/lcu_provider.py`: import sqlalchemy.select + app.db (AsyncSessionLocal, Champion, Meta) + app.draft_state_provider + app.models; `_ROLE_MAP` (top/jungle/middle/bottom/utility -> TOP/JUNGLE/MID/ADC/SUPPORT); `_normalize_role`, `_champion_name` (championId 0/None -> None), `_load_champion_id_to_name` (Champion.key int -> name), `_load_cached_patch` (Meta key='patch'); `parse_champ_select_session(session, patch, champion_names) -> DraftState` (legge solo cellId/championId/assignedPosition/actions; mai summoner; difensivo su schema custom-bot ridotto INC-001); classe `LCUProvider(DraftStateProvider)` con `get_current_state()` (lcu_request champ-select, non-200 -> LockfileError, patch+nomi da cache, parse).
+- `tests/test_lcu_provider.py`: import LCUProvider/parse_champ_select_session/DraftState; +5 test (parse ranked completo; custom-bot minimale no crash; campi summoner non emergono in DraftState dump; LCUProvider.get_current_state mockato; non-200 -> LockfileError). File totale 18 test.
+- `README.md`: stato codice -> M5/T36-T39 chiusi, suite 69/69; prossimo task -> M5/T40 (ultima M5, commit a fine M5).
+- `PROMPT_LOG.md`: questa PLOG-041.
+- `INCIDENTS.md` / `SPEC_ERRATA.md`: NON modificati (nessun incidente reale, nessun errata).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\lcu_provider.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_lcu_provider.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+git grep -n "lol-summoner" -- "*.py"   # nessun match (exit 1 = no match, atteso)
+```
+
+Esiti: compile exit 0; 18/18 lcu_provider PASSED; suite totale 69 passed; git grep nessun match.
+
+### DoD T39
+
+- Parsing champ-select -> DraftState con user_role e bans: VERIFICATO (ranked mock, user_role=MID, bans=[Aatrox]).
+- championId 0 -> champion None: VERIFICATO.
+- Custom-vs-bot schema ridotto senza crash (INC-001): VERIFICATO (1 action, campi sparsi).
+- Nessun summoner name nel DraftState (spec 10.1): VERIFICATO (summonerId/gameName/displayName assenti dal dump) + git grep guard.
+- LCUProvider.get_current_state() restituisce DraftState: VERIFICATO mockato; non-200 -> LockfileError.
+- Reale "custom con bot -> DraftState reale": RINVIATO a T40 (piano; client non aperto ora).
+
+### Decisione
+
+- M5/T39 chiuso lato codice. Verifica live reale in scope T40.
+- Nessun commit/push (decisione utente: commit a fine M5, dopo T40). Working tree accumula PROMPT_LOG/README/app/tests fino al commit M5.
+- Prossimo task tecnico: M5/T40 (test live LCU - custom Tournament Draft con ban, schema actions >=10, documentare differenza vs gating 09/05 in INCIDENTS se persistente). Richiede client LoL aperto su questa macchina (LoL presente in E:\Riot Games\League of Legends): da concordare con l'utente quando aprire il client. Stesso metodo piano->approvazione->esecuzione->docs; al termine commit unico M5.
+
+## PLOG-2026-05-16-042 - M5/T40 verifica live + INC-010 + BREAKDOWN_STATUS.md + commit M5
+
+- Data: 2026-05-16
+- Scope: T40 verifica live LCU su PC casa; documentazione stato; commit/push di chiusura giornata.
+- Stato: integrazione live M5 VALIDATA; T40 DoD numerico IN SOSPESO (INC-010); commit/push eseguito; stop serata.
+
+### Messaggi catalogati
+
+- USER-101: sceglie (a), apre LoL; "client aperto".
+- CODEX-274: crea `scripts/lcu_live_check.py`; run step 1-3: lockfile reale `E:\...` via psutil OK, gameflow HTTP 404 (client a menu, atteso), monitor None.
+- USER-102: "lobby crea ... partita avviata".
+- CODEX-275: re-run: gameflow HTTP 200 phase ChampSelect; GameflowMonitor ChampSelect; `LCUProvider.get_current_state()` -> DraftState reale (user_role ADC, patch 16.10.1, mapping championId->nome OK, zero summoner); MA bans=0, actions=3 (schema custom-vs-bot ridotto, identico gating 09/05).
+- USER-103: non puo fare partita con umani ora; chiede di compilare/aggiornare il breakdown status segnando bene cosa e' in sospeso, poi commit/push di tutto, poi stop serata.
+- CODEX-276: INC-010 (schema actions ridotto confermato persistente, T40 numerico in sospeso, mitigazione sim mode attiva); creato `BREAKDOWN_STATUS.md` versionato nel repo (sostituisce/prosegue il Desktop pc its non raggiungibile); README aggiornato; commit/push M5.
+
+### Esito verifica live T40
+
+- VALIDATO live: `find_lockfile` via psutil su path reale NON standard `E:\Riot Games\League of Legends\lockfile`; `lcu_request` gameflow HTTP 200; `GameflowMonitor` ChampSelect; `LCUProvider.get_current_state()` DraftState valido; mapping championId->nome (Caitlyn, Anivia, Darius, Swain, Akali, Mordekaiser, Renata Glasc, Miss Fortune, Udyr); privacy 10.1 (zero token summoner nel dump); nessun crash su schema ridotto.
+- NON soddisfatto (in sospeso): DoD numerico `>=5 bans` (0) e `>=10 actions` (3). Causa: schema custom-vs-bot ridotto, gia previsto da spec 14.2 / INC-001, ora confermato persistente -> INC-010. Non e un bug di codice.
+
+### File modificati
+
+- `scripts/lcu_live_check.py` (nuovo): utility CLI verifica live T40 (NON test_*, evita collisione pytest PLOG-032); step 1-4, password mascherata, solo endpoint gameflow + champ-select (privacy 10.1), idempotente.
+- `INCIDENTS.md`: aggiunto INC-010 (stato APERTO/in sospeso, mitigazione attiva, nessun ERRATA).
+- `BREAKDOWN_STATUS.md` (nuovo, versionato): stato completo M0-M10, M5 dettaglio, "Cosa chiuso" / "Cosa in sospeso" (T40 numerico, OPEN-002, OPEN-001 residuo revoca key, T58/T62, T05b, finding pytest), come riprendere.
+- `README.md`: stato M5/T36-T39 chiusi+live-validati, T40 IN SOSPESO, suite 69/69, rimando a BREAKDOWN_STATUS.md.
+- `PROMPT_LOG.md`: PLOG-040, 041 (T38/T39, non ancora committate) + questa PLOG-042.
+- `app/lcu_provider.py`, `tests/test_lcu_provider.py`: invariati da T39 (gia chiusi).
+- `SPEC_ERRATA.md`: NON modificato (14.2 documenta gia il rischio; nessun errata).
+
+### Verifiche eseguite
+
+```powershell
+$env:PYTHONPATH="."; .\.venv\Scripts\python.exe scripts\lcu_live_check.py
+```
+
+Esito: step 1-3 OK; step 4 DraftState reale OK su parte non numerica; bans=0/actions=3 (in sospeso, INC-010).
+
+### Decisione
+
+- T40 NON chiuso: integrazione live validata, DoD numerico in sospeso fino a un draft reale con ban (umani/tournament). Rieseguire `scripts/lcu_live_check.py`.
+- M5 codice (T36-T39) considerato chiuso e live-validato per la parte non legata al numero di azioni.
+- Commit/push di tutto il lavoro accumulato (T38/T39/T40 + docs) eseguito a fine serata. Stop serata su richiesta utente.
+- Prossimo (sessione futura): chiudere T40 in un draft reale, poi M6a/T41 (FastAPI app + lifecycle).

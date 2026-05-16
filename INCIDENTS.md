@@ -288,3 +288,35 @@ Su qualsiasi macchina pulita (incluso potenzialmente il PC Academy) la suite fal
 - Verifica `scripts/test_data_dragon.py` (T12): exit 0, 172 champions, 705 items, 17 keystones, accent/tags/no-roles check OK.
 - `pytest tests/`: 51/51 PASSED ripristinato.
 - README "Setup Previsto" aggiornato con il passo di popolamento cache Data Dragon come prerequisito ai test. Proposta di nota analoga in spec 13.2 lasciata a decisione utente (modifica strutturale -> eventuale SPEC_ERRATA, non applicata qui).
+
+## INC-010 - Schema actions LCU ridotto in custom-vs-bot: confermato persistente (T40)
+
+- Data rilevazione: 2026-05-16
+- Fase: M5 / T40 (test live LCU su PC casa)
+- Severita: bassa (limite ambiente di test previsto da spec 14.2, nessun bug di codice)
+- Stato: APERTO - in sospeso verifica con draft reale (umani/tournament). Mitigazione gia attiva.
+
+### Descrizione
+
+Verifica live T40 su PC di casa (LoL in `E:\Riot Games\League of Legends`, client aperto, custom con bot in champion select). Catena M5 validata end-to-end:
+
+- `find_lockfile()` ha risolto il path reale NON standard `E:\Riot Games\League of Legends\lockfile` via `psutil` (ramo mai testabile su pc its): OK.
+- `lcu_request("GET", "/lol-gameflow/v1/session")`: HTTP 200, phase `ChampSelect`: OK.
+- `GameflowMonitor.poll_once()`: `ChampSelect`: OK.
+- `LCUProvider.get_current_state()`: `DraftState` valido, `user_role=ADC`, patch `16.10.1` da cache, mapping championId->nome corretto (Caitlyn, Anivia, Darius, Swain, Akali, Mordekaiser, Renata Glasc, Miss Fortune, Udyr), nessun token summoner nel dump (privacy 10.1 OK), nessun crash su schema ridotto.
+
+Tuttavia il DoD numerico di T40 (`>=5 bans`, `>=10 actions`) NON e soddisfatto: `bans=0`, `actions=3` (`ban` non completato del giocatore locale, `ten_bans_reveal`, `pick` non completato), `enemy_team` con ruoli vuoti. Identico al gating del 09/05/2026 (3 actions).
+
+### Impatto
+
+Conferma il rischio gia previsto nella spec 14.2 ("Schema actions LCU diverso in ranked vs custom", probabilita Media) e in INC-001. Il custom-vs-bot espone solo le azioni del giocatore locale, non le 15+ di un draft completo. Il criterio numerico `>=10 actions / >=5 bans` e raggiungibile solo in un draft reale (ranked o tournament con umani), non in custom-vs-bot. Non e un difetto del codice: `LCUProvider`/`parse_champ_select_session` parsano correttamente e in modo difensivo quanto LCU espone.
+
+### Mitigazione
+
+- Mitigazione gia prevista dalla spec e GIA IMPLEMENTATA E VERDE: modalita simulazione (`FileProvider`, MVP-015) 5/5 VALID su DeepSeek (PLOG-2026-05-16-036). La demo Academy non dipende dal draft live.
+- Codice M5 (T36-T39) validato live per tutta la parte non legata al numero di azioni: lockfile/psutil, auth, gameflow, champ-select parsing, mapping, privacy.
+
+### Residuo (in sospeso)
+
+- Verifica DoD numerico T40 (`>=5 bans`, `>=10 actions`) rinviata a un draft reale con ban effettivi (umani o tournament draft completo). Da rieseguire `scripts/lcu_live_check.py` in quella sessione.
+- Nessuna modifica strutturale di spec: 14.2 documenta gia il rischio; questa e la sua conferma empirica, non una variazione di perimetro. Nessun ERRATA necessario.
