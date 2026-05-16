@@ -4561,3 +4561,47 @@ Esito: step 1-3 OK; step 4 DraftState reale OK su parte non numerica; bans=0/act
 - M5 codice (T36-T39) considerato chiuso e live-validato per la parte non legata al numero di azioni.
 - Commit/push di tutto il lavoro accumulato (T38/T39/T40 + docs) eseguito a fine serata. Stop serata su richiesta utente.
 - Prossimo (sessione futura): chiudere T40 in un draft reale, poi M6a/T41 (FastAPI app + lifecycle).
+
+## PLOG-2026-05-16-043 - M6a/T41 FastAPI app + lifecycle (impl + 4 test, runtime VERDE)
+
+- Data: 2026-05-16
+- Scope: T41 (M6a) - `app/main.py` FastAPI app + lifecycle; `app/config.py` (pydantic-settings, spec Â§7.1). T40 lasciato IN SOSPESO su richiesta utente; si procede col task successivo.
+- Stato: T41 CHIUSO lato codice + DoD runtime VERDE. Niente commit/push (decisione utente: attendere).
+
+### Messaggi catalogati
+
+- USER-104: allega spec/errata/breakdown/status pc_its (stale); chiede analisi stato, prossima task, no invenzioni, piano prima di costruire; subtask: T40 in sospeso, procedere coi successivi.
+- CODEX-277: analisi repo (BREAKDOWN_STATUS.md repo = fonte autorevole; pc_its = versione vecchia, successione dichiarata; nessuna incoerenza). Suite 69/69. Piano T41 esposto (config.py + main.py + test + verifica + docs).
+- USER-105: "piano approvato, aspetta per il commit/push pero'".
+- CODEX-278: implementazione T41 + test + verifica runtime + questa PLOG-043 + BREAKDOWN_STATUS/README. Nessun commit.
+
+### File creati/modificati
+
+- `app/config.py` (nuovo): `Settings(BaseSettings)` via `pydantic-settings` (spec Â§7.1); legge `.env` (DEEPSEEK_API_KEY, LLM_MODEL_PRIMARY/FALLBACK_1, DRAFT_PROVIDER_MODE/FILE, LOG_LEVEL) con default sicuri; `get_settings()` lru_cache. `ai_client.py` non toccato (mantiene i suoi `os.environ` per retrocompatibilita; Settings e single source of truth per lifecycle/provider).
+- `app/main.py` (nuovo): `FastAPI(lifespan=...)`; startup -> `init_db()` + `check_patch_and_refresh()`; fallimento Data Dragon NON fatale (spec Â§12, RF-001: log warning + prosegue su cache locale); log `App ready`; shutdown log. Porta NON cablata (gestita dal launcher T42, spec Â§7.1). Nessun endpoint (T43/T44 fuori scope).
+- `tests/test_main.py` (nuovo): 4 test (Settings default con env-clear monkeypatch per evitare pollution da load_dotenv di altri test; metadata app; lifespan startup logga `App ready`/shutdown con init_db+check_patch ordinati; fallimento Data Dragon non fatale via httpx.ConnectError mock).
+- `PROMPT_LOG.md`: questa PLOG-043. `BREAKDOWN_STATUS.md`/`README.md`: stato T41 chiuso, suite 73/73, prossimo M6a/T42.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale, nessun errata).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\config.py app\main.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000   # avvio reale, poi stop
+```
+
+Esiti: compile exit 0; suite **73 passed** (69 baseline + 4 T41); uvicorn avvio senza errori, log `Data Dragon cache ready (patch 16.10.1)` (cache hit, no re-download) + `App ready` + `Application startup complete`, `GET /docs` HTTP 200, shutdown pulito.
+
+### DoD T41
+
+- `uvicorn app.main:app --port 8000` parte senza errori: VERIFICATO (runtime reale).
+- Log mostra `App ready`: VERIFICATO.
+- Startup esegue init DB + refresh Data Dragon se necessario; resiliente a CDN down (spec Â§12): VERIFICATO (test + cache hit reale).
+- Config letta da `.env` via pydantic-settings (spec Â§7.1): VERIFICATO.
+
+### Decisione
+
+- T41 chiuso (codice + runtime). M6a avviato.
+- Nessun commit/push: working tree accumula `app/config.py`, `app/main.py`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md` fino a OK utente.
+- Prossimo task: M6a/T42 (`launcher.py` con auto-browser + port fallback 8000->8003).

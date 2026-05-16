@@ -19,8 +19,8 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 - Principio operativo: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback), ERRATA-006
 - Frontend MVP: HTML + Tailwind CDN + Vanilla JS + fetch (ERRATA-002)
-- Suite test: 69/69 PASSED (`pytest tests/`)
-- Prossimo task tecnico: M5/T40 da CHIUDERE (vedi In sospeso), poi M6a/T41 (FastAPI app + lifecycle)
+- Suite test: 73/73 PASSED (`pytest tests/`)
+- Prossimo task tecnico: M6a/T42 (`launcher.py` auto-browser + port fallback). T41 CHIUSO. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
 
 ## Avanzamento per modulo
 
@@ -32,7 +32,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 | M3 Prompt+AIClient (T23-T31) | CHIUSO lato codice + RUNTIME CHIUSO | DoD runtime OPEN-001 (T27/T31) verdi su DeepSeek 2026-05-16 |
 | M4 FileProvider (T32-T35) | CHIUSO lato codice + RUNTIME CHIUSO | T35 sim mode 5/5 VALID reale su DeepSeek 2026-05-16; scenari PLUMBING (OPEN-002) |
 | M5 LCU Provider (T36-T40) | T36-T39 CHIUSI (codice+live-validati); T40 PARZIALE/IN SOSPESO | vedi sotto |
-| M6a/M6b FastAPI+UI+suggest+errori | NON iniziato | prossimo macro-blocco dopo M5 |
+| M6a/M6b FastAPI+UI+suggest+errori | M6a AVVIATO: T41 CHIUSO (codice+runtime) | T41 `app/main.py`+`app/config.py`; T42-T44/T46-T47 da fare |
 | M7a/M7b Cache+History+SuggestionService+storico | NON iniziato | |
 | M8 Test sistematici (T57-T65) | NON iniziato | T58/T62 dipendono da OPEN-002 |
 | M9 Demo+packaging (T66-T71) | NON iniziato | |
@@ -79,11 +79,12 @@ Poi creare `.env` da `.env.example` con `DEEPSEEK_API_KEY` reale (mai in chat, I
 - Test completi: `.\.venv\Scripts\python.exe -m pytest tests/` (atteso 69/69).
 - Verifica live LCU (T40): aprire LoL, entrare in champ select, poi
   `$env:PYTHONPATH="."; .\.venv\Scripts\python.exe scripts\lcu_live_check.py`.
-- Prossimo task quando T40 chiuso: M6a/T41 (`app/main.py` FastAPI + lifecycle).
+- T41 CHIUSO 2026-05-16 (`app/main.py` FastAPI + lifecycle, `app/config.py` pydantic-settings; suite 73/73; uvicorn runtime VERDE). T40 resta in sospeso ma il breakdown procede.
+- Prossimo task: M6a/T42 (`launcher.py` auto-browser + port fallback 8000->8003).
 
 ## Riferimenti documentali
 
-- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-042).
+- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-043).
 - `INCIDENTS.md`: INC-001..INC-010.
 - `SPEC_ERRATA.md`: ERRATA-001..ERRATA-006.
 - `README.md`: stato sintetico corrente.

@@ -1,0 +1,62 @@
+"""FastAPI application + lifecycle (M6a/T41).
+
+Startup: init the SQLite schema and refresh the Data Dragon cache when the
+patch changed. Network failure on Data Dragon is non-fatal (spec Â§12: "Data
+Dragon CDN non risponde -> uso cache locale"): the app must still start so
+the user sees the UI (RF-001). The HTTP port is NOT bound here; the launcher
+(T42) owns port selection (spec Â§7.1 "porta libera auto-rilevata").
+
+Endpoints (GET /, /api/draft-state, ...) are out of scope for T41 and added
+in T43/T44.
+"""
+
+from __future__ import annotations
+
+import logging
+from contextlib import asynccontextmanager
+
+import httpx
+from fastapi import FastAPI
+
+from app.config import get_settings
+from app.data_dragon import check_patch_and_refresh
+from app.db import init_db
+
+logger = logging.getLogger("live_draft_companion")
+
+
+def _configure_logging(level_name: str) -> None:
+    level = logging.getLevelName(level_name.upper())
+    if not isinstance(level, int):
+        level = logging.INFO
+    logging.basicConfig(level=level)
+    logger.setLevel(level)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan: prepare local caches on startup, clean up on shutdown."""
+    settings = get_settings()
+    _configure_logging(settings.log_level)
+
+    await init_db()
+    try:
+        patch = await check_patch_and_refresh()
+        logger.info("Data Dragon cache ready (patch %s)", patch)
+    except (httpx.HTTPError, RuntimeError) as exc:
+        # Non-fatal: fall back to whatever local cache exists (spec Â§12).
+        logger.warning(
+            "Data Dragon refresh skipped (%s); using local cache if present", exc
+        )
+
+    logger.info("App ready")
+    yield
+    logger.info("App shutting down")
+
+
+app = FastAPI(
+    title="Live Draft Companion",
+    description="Assistente AI per il draft di League of Legends (MVP).",
+    version="0.1.0",
+    lifespan=lifespan,
+)
