@@ -4690,3 +4690,45 @@ Esiti: compile exit 0; suite **80 passed** (79 + 1 T43); smoke reale `GET /` -> 
 
 - T43 chiuso (codice + runtime). Commit/push NON eseguito: in attesa di ok utente esplicito (pattern stabilito). Working tree accumula `templates/index.html`, `app/main.py`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M6a/T44 (endpoint `GET /api/draft-state` -> stato del DraftStateProvider attivo, JSON).
+
+## PLOG-2026-05-16-046 - M6a/T44 endpoint GET /api/draft-state + provider factory (impl + 2 test, runtime VERDE)
+
+- Data: 2026-05-16
+- Scope: T44 (M6a) - `app/providers.py` factory + route `GET /api/draft-state`. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T44 CHIUSO lato codice + DoD runtime VERDE. Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-110: "ok procedi" (commit/push T43 + pianificazione T44).
+- CODEX-283: commit/push T43 (e552945 su main); piano T44 esposto (providers.py factory + endpoint + 2 test + verifica + docs); in attesa approvazione.
+- USER-111: "procedi".
+- CODEX-284: implementazione T44 + 2 test + smoke runtime reale + questa PLOG-046 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `app/providers.py` (nuovo): `get_draft_state_provider(settings) -> DraftStateProvider`; `sim` -> `FileProvider(settings.draft_provider_file)`; `live` -> `LCUProvider()`; mode sconosciuto -> `ValueError`. Modulo dedicato per tenere l'endpoint sottile e centralizzare la scelta LCU-vs-file (spec Â§8.1, Demo Mode First).
+- `app/main.py`: import `HTTPException`, `DraftState`, `get_draft_state_provider`; route `@app.get("/api/draft-state")` -> provider da `get_settings()` -> `get_current_state()` -> `DraftState` (FastAPI serializza Pydantic). Su `OSError/ValueError/RuntimeError` -> `HTTPException(503, "Stato draft non disponibile: <tipo>")` senza stack trace. Mapping completo error-code/user-message RINVIATO a T49b (commento esplicito): qui solo minimo anti-crash. Nota: `LockfileError` (RuntimeError) e `ValidationError` (ValueError) ricadono nel 503 controllato.
+- `tests/test_main.py`: +2 test (`test_draft_state_sim_returns_draftstate`: get_settings mockato sim+balanced_mid -> 200 application/json, patch/user_role/bans verificati su FileProvider reale; `test_draft_state_provider_error_returns_503`: provider stub che solleva RuntimeError -> 503 JSON controllato). Helper `_mock_lifecycle` per non toccare rete/DB nel lifespan.
+- `PROMPT_LOG.md`: questa PLOG-046. `BREAKDOWN_STATUS.md`/`README.md`: T44 chiuso, suite 82/82, prossimo T46.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\main.py app\providers.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+# smoke reale: DRAFT_PROVIDER_MODE=sim DRAFT_PROVIDER_FILE=tests/mock_drafts/balanced_mid.json
+#   uvicorn app.main:app --port 8066 ; GET /api/draft-state
+```
+
+Esiti: compile exit 0; suite **82 passed** (80 + 2 T44); smoke reale `GET /api/draft-state` -> HTTP 200 `application/json`, DraftState completo (patch 16.10.1, user_role MID, 5 bans, enemy/ally team, actions [], local_player_cell_id 2).
+
+### DoD T44
+
+- Endpoint restituisce lo stato del DraftStateProvider attivo (sim/live da `.env`): VERIFICATO (sim reale + test factory).
+- fetch/curl -> JSON con campi DraftState: VERIFICATO (smoke reale, JSON con tutti i campi del model).
+
+### Decisione
+
+- T44 chiuso (codice + runtime). Commit/push NON eseguito: in attesa di ok utente esplicito (pattern stabilito). Working tree accumula `app/providers.py`, `app/main.py`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M6a/T46 (`templates/index.html` completo con Tailwind CDN: header, stato connessione, griglia draft, area suggerimenti, area storico, area error banner nascosta).

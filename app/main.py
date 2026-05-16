@@ -16,13 +16,15 @@ import logging
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
 from app.data_dragon import check_patch_and_refresh
 from app.db import init_db
+from app.models import DraftState
+from app.providers import get_draft_state_provider
 
 # Path is relative to the process CWD (repo root in dev / via launcher).
 # PyInstaller sys._MEIPASS resolution is deferred to T66 per breakdown.
@@ -76,3 +78,21 @@ async def index(request: Request) -> HTMLResponse:
     JS is T47.
     """
     return templates.TemplateResponse(request, "index.html")
+
+
+@app.get("/api/draft-state")
+async def draft_state() -> DraftState:
+    """Return the current DraftState from the active provider (sim or live).
+
+    Provider is chosen from `.env` (MVP-004). On a provider failure return a
+    controlled 503 (no stack trace); the full error-code/user-message
+    mapping is T49b, not anticipated here.
+    """
+    provider = get_draft_state_provider(get_settings())
+    try:
+        return await provider.get_current_state()
+    except (OSError, ValueError, RuntimeError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Stato draft non disponibile: {type(exc).__name__}",
+        ) from exc

@@ -19,8 +19,8 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 - Principio operativo: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback), ERRATA-006
 - Frontend MVP: HTML + Tailwind CDN + Vanilla JS + fetch (ERRATA-002)
-- Suite test: 80/80 PASSED (`pytest tests/`)
-- Prossimo task tecnico: M6a/T44 (endpoint `GET /api/draft-state`). T41+T42+T43 CHIUSI. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
+- Suite test: 82/82 PASSED (`pytest tests/`)
+- Prossimo task tecnico: M6a/T46 (`templates/index.html` completo Tailwind CDN). T41-T44 CHIUSI. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
 
 ## Avanzamento per modulo
 
@@ -32,7 +32,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 | M3 Prompt+AIClient (T23-T31) | CHIUSO lato codice + RUNTIME CHIUSO | DoD runtime OPEN-001 (T27/T31) verdi su DeepSeek 2026-05-16 |
 | M4 FileProvider (T32-T35) | CHIUSO lato codice + RUNTIME CHIUSO | T35 sim mode 5/5 VALID reale su DeepSeek 2026-05-16; scenari PLUMBING (OPEN-002) |
 | M5 LCU Provider (T36-T40) | T36-T39 CHIUSI (codice+live-validati); T40 PARZIALE/IN SOSPESO | vedi sotto |
-| M6a/M6b FastAPI+UI+suggest+errori | M6a IN CORSO: T41+T42+T43 CHIUSI (codice+runtime) | T41 `app/main.py`+`app/config.py`; T42 `launcher.py`; T43 `GET /`+`templates/index.html`; T44/T46-T47 da fare |
+| M6a/M6b FastAPI+UI+suggest+errori | M6a IN CORSO: T41-T44 CHIUSI (codice+runtime) | T41 main+config; T42 launcher; T43 `GET /`; T44 `GET /api/draft-state`+`app/providers.py`; T46-T47 da fare |
 | M7a/M7b Cache+History+SuggestionService+storico | NON iniziato | |
 | M8 Test sistematici (T57-T65) | NON iniziato | T58/T62 dipendono da OPEN-002 |
 | M9 Demo+packaging (T66-T71) | NON iniziato | |
@@ -81,13 +81,14 @@ Poi creare `.env` da `.env.example` con `DEEPSEEK_API_KEY` reale (mai in chat, I
   `$env:PYTHONPATH="."; .\.venv\Scripts\python.exe scripts\lcu_live_check.py`.
 - T41 CHIUSO 2026-05-16 (`app/main.py` FastAPI + lifecycle, `app/config.py` pydantic-settings; uvicorn runtime VERDE). Commit 3457994 su main.
 - T42 CHIUSO 2026-05-16 (`launcher.py` in-process uvicorn + port fallback 8000->8003 + auto-browser; smoke reale: 8000 free->8000, 8000 busy->8001, HTTP 200). Commit 387b9f9 su main.
-- T43 CHIUSO 2026-05-16 (`GET /` -> `templates/index.html` minimale; suite 80/80; smoke reale GET / HTTP 200 text/html "In attesa del client LoL"). Commit IN ATTESA di ok utente.
+- T43 CHIUSO 2026-05-16 (`GET /` -> `templates/index.html` minimale; smoke reale GET / HTTP 200 text/html "In attesa del client LoL"). Commit e552945 su main.
+- T44 CHIUSO 2026-05-16 (`GET /api/draft-state` + `app/providers.py` factory sim/live; suite 82/82; smoke reale sim HTTP 200 application/json DraftState completo). Commit IN ATTESA di ok utente.
 - T40 resta in sospeso ma il breakdown procede.
-- Prossimo task: M6a/T44 (endpoint `GET /api/draft-state`).
+- Prossimo task: M6a/T46 (`templates/index.html` completo Tailwind CDN + sezioni).
 
 ## Riferimenti documentali
 
-- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-045).
+- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-046).
 - `INCIDENTS.md`: INC-001..INC-010.
 - `SPEC_ERRATA.md`: ERRATA-001..ERRATA-006.
 - `README.md`: stato sintetico corrente.

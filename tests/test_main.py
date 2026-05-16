@@ -58,6 +58,59 @@ def test_index_serves_base_html(monkeypatch) -> None:
     assert "In attesa del client LoL" in response.text
 
 
+def _mock_lifecycle(monkeypatch) -> None:
+    async def fake_init_db() -> None:
+        return None
+
+    async def fake_check_patch_and_refresh() -> str:
+        return "16.10.1"
+
+    monkeypatch.setattr(main, "init_db", fake_init_db)
+    monkeypatch.setattr(main, "check_patch_and_refresh", fake_check_patch_and_refresh)
+
+
+def test_draft_state_sim_returns_draftstate(monkeypatch) -> None:
+    """GET /api/draft-state in sim mode returns the DraftState JSON (DoD T44)."""
+    _mock_lifecycle(monkeypatch)
+    monkeypatch.setattr(
+        main,
+        "get_settings",
+        lambda: Settings(
+            _env_file=None,
+            draft_provider_mode="sim",
+            draft_provider_file="tests/mock_drafts/balanced_mid.json",
+        ),
+    )
+
+    with TestClient(main.app) as client:
+        response = client.get("/api/draft-state")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/json")
+    body = response.json()
+    assert body["patch"] == "16.10.1"
+    assert body["user_role"] in {"TOP", "JUNGLE", "MID", "ADC", "SUPPORT"}
+    assert isinstance(body["bans"], list)
+
+
+def test_draft_state_provider_error_returns_503(monkeypatch) -> None:
+    """A provider failure is surfaced as a controlled 503, not a stack trace."""
+    _mock_lifecycle(monkeypatch)
+
+    class FailingProvider:
+        async def get_current_state(self):
+            raise RuntimeError("client LoL non attivo")
+
+    monkeypatch.setattr(main, "get_draft_state_provider", lambda settings: FailingProvider())
+
+    with TestClient(main.app) as client:
+        response = client.get("/api/draft-state")
+
+    assert response.status_code == 503
+    assert response.headers["content-type"].startswith("application/json")
+    assert "Stato draft non disponibile" in response.json()["detail"]
+
+
 def test_lifespan_startup_ok(monkeypatch, caplog) -> None:
     """Startup runs init_db + Data Dragon refresh and logs 'App ready' (DoD T41)."""
     calls: list[str] = []
