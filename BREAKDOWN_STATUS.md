@@ -20,7 +20,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback), ERRATA-006
 - Frontend MVP: HTML + Tailwind CDN + Vanilla JS + fetch (ERRATA-002)
 - Suite test: 131/131 PASSED (`pytest tests/`)
-- Prossimo task tecnico: M8/T58 (benchmark 30 chiamate in sim mode; significativita benchmark reale ancora legata a OPEN-002). M6a + M6b + M7a + M7b COMPLETI; M8/T57 CHIUSO. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
+- Prossimo task tecnico: M8/T59 (cache hit integration test). M6a + M6b + M7a + M7b COMPLETI; M8/T57-T58 CHIUSI. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
 
 ## Avanzamento per modulo
 
@@ -36,7 +36,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 | M6b suggest endpoint + UI + errori | **COMPLETO** (T45+T48+T49+T49b) | endpoint sottile; render 3 card; spinner+disclaimer; contratto errori uniforme + banner UI + log ERROR |
 | M7a Cache+History+SuggestionService | **COMPLETO** (T50-T53 + T45b) | tabelle single-DB; CacheService; HistoryRepository; SuggestionService orchestratore |
 | M7b storico feedback UI | **COMPLETO** (T54-T56) | T54 endpoint feedback; T55 GET history; T56 UI storico + feedback |
-| M8 Test sistematici (T57-T65) | IN CORSO (T57 chiuso; prossimo T58) | 15 mock draft strutturali in repo; T58/T62 restano semanticamente dipendenti da OPEN-002 |
+| M8 Test sistematici (T57-T65) | IN CORSO (T57-T58 chiusi; prossimo T59) | 15 mock draft strutturali in repo; T58 plumbing benchmark eseguito; qualita output aperta in INC-013; T62 resta dipendente da OPEN-002/T05b |
 | M9 Demo+packaging (T66-T71) | NON iniziato | |
 | M10 Presentazione (T72-T73) | NON iniziato | |
 
@@ -59,9 +59,9 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 ## Cosa e' IN SOSPESO
 
 1. **T40 DoD numerico** (`>=5 bans`, `>=10 actions`): non riproducibile in custom-vs-bot (INC-010, conferma di spec 14.2 / INC-001). Richiede un draft reale con ban effettivi. Rieseguire `scripts/lcu_live_check.py`. Mitigazione gia attiva: sim mode (`FileProvider`) 5/5 VALID.
-2. **OPEN-002**: dati reali scenari benchmark 09/05 (`test_scenarios.md`) NON nel repo; i 15 mock T57 sono scenari strutturali/PLUMBING. Blocca la significativita di T58/T62 come benchmark reale. Utente li fornisce da casa.
+2. **OPEN-002**: dati reali scenari benchmark 09/05 (`test_scenarios.md`) NON nel repo; i 15 mock T57 sono scenari strutturali/PLUMBING. T58 e stato eseguito come benchmark plumbing; la significativita reale di qualita/panel T62 resta bloccata. Utente li fornisce da casa.
 3. **OPEN-001 residuo**: revocare la API key OpenRouter esposta in chat (`...e26d34`) su openrouter.ai (INC-007). Non blocca codice (provider = DeepSeek).
-4. **T58/T62**: benchmark p95 e panel valutatori, subordinati a OPEN-002.
+4. **T62 / benchmark reale semantico**: panel valutatori e giudizio qualita subordinati a OPEN-002 + T05b.
 5. **T05b**: reclutamento panel valutatori (1-2 amici Gold/Plat+), azione manuale utente non ancora fatta.
 6. **Finding pytest** (PLOG-2026-05-15-032): `pytest` nudo dalla root collide su basename `test_sim_mode.py` (scripts vs tests). Workaround: usare `pytest tests/` (atteso 131/131 quando l'ambiente Python e funzionante). Fix opzionale non bloccante.
 
@@ -100,12 +100,13 @@ Poi creare `.env` da `.env.example` con `DEEPSEEK_API_KEY` reale (mai in chat, I
 - T55 CHIUSO 2026-05-16 (`GET /api/history` -> array JSON ultime 50 entries, newest-first, con `id`, `timestamp`, `draft_state`, `output`, `model_used`, `feedback`; suite 118/118).
 - T56 CHIUSO 2026-05-16 (`static/app.js` storico UI: fetch `GET /api/history`, render righe compatte, bottoni `Utile`/`Inutile` -> `POST /api/history/feedback`, conferma visiva `aria-pressed`, banner T49b sugli errori; suite 119/119). **M7b COMPLETO**.
 - T57 CHIUSO 2026-05-16 (15 scenari JSON in `tests/mock_drafts/`, 3 per ruolo TOP/JUNGLE/MID/ADC/SUPPORT, copertura AD-heavy/AP-heavy/balanced + edge first/last pick, aggressive bans, meta picks out; tutti caricabili via FileProvider; suite 131/131). Nota: scenari PLUMBING, non dati benchmark reali OPEN-002.
+- T58 CHIUSO 2026-05-16 (`scripts/benchmark_30_calls.py`; 30 chiamate reali DeepSeek in sim mode, cache bypass; 17/30 success, p95_all 4166 ms <= 30000 ms, fallback 0%, rate limit 0, timeout 0, token usage 25698 prompt / 9285 completion, cost reported `null` per response SDK; report `logs/benchmark_30_calls_20260516_212130.json`). INC-013 aperto per 13/30 `ai_output_invalid` post-validator.
 - T40 resta in sospeso ma il breakdown procede.
-- Prossimo task: M8/T58 (script benchmark 30 chiamate in sim mode).
+- Prossimo task: M8/T59 (cache hit integration test).
 
 ## Riferimenti documentali
 
-- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-063).
-- `INCIDENTS.md`: INC-001..INC-012.
+- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-064).
+- `INCIDENTS.md`: INC-001..INC-013.
 - `SPEC_ERRATA.md`: ERRATA-001..ERRATA-007.
 - `README.md`: stato sintetico corrente.

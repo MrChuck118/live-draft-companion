@@ -260,7 +260,7 @@ Questa correzione e subordinata ad approvazione utente: non si tocca `.env.examp
 - Effetti su questo incidente:
   - La chain OpenRouter rate-limited non e piu nel percorso runtime: la causa radice (free tier 429 + scelta tra attesa/top-up) decade.
   - La sub-issue del model ID Mistral inesistente diventa nulla: i modelli OpenRouter sono stati rimossi da `.env.example`. La prevista ERRATA-006 di correzione model ID NON serve piu (il numero ERRATA-006 e stato usato per lo switch DeepSeek).
-- Residuo aperto: le DoD runtime reali (T27/T31/T35/T58/T62) restano da eseguire, ma ora contro DeepSeek, dopo che l'utente crea `.env` locale con `DEEPSEEK_API_KEY`. Non e piu un blocco da rate limit ma una semplice azione di configurazione utente.
+- Residuo aperto aggiornato 2026-05-16: le DoD runtime reali T27/T31/T35/T58 sono state eseguite contro DeepSeek diretto. Resta aperta T62/panel perche subordinata a OPEN-002/T05b; T58 ha inoltre aperto INC-013 per affidabilita output post-validator.
 - Dettaglio decisione in `PROMPT_LOG.md` PLOG-2026-05-15-030.
 
 ## INC-009 - Suite test non verde su macchina pulita: cache Data Dragon non popolata
@@ -378,3 +378,33 @@ Inoltre `where.exe python` e `where.exe py` non trovano interpreti nella session
 - Verificato `.\.venv\Scripts\python.exe -m pip check` -> no broken requirements.
 - Rieseguito `.\.venv\Scripts\python.exe -m pytest tests/` prima di T54 -> **110 passed**.
 - Dopo T54, rieseguita la suite completa -> **115 passed**.
+
+## INC-013 - T58 benchmark: output AI JSON valido ma 13/30 falliscono i validatori finali
+
+- Data rilevazione: 2026-05-16
+- Fase: M8 / T58 benchmark 30 chiamate sim mode
+- Severita: media (affidabilita suggerimenti, non latenza; nessun crash)
+- Stato: APERTO - mitigazione da pianificare prima della valutazione panel T62
+
+### Descrizione
+
+Il benchmark reale T58 su DeepSeek diretto (`deepseek-chat`) ha eseguito 30 chiamate (15 scenari mock T57 x 2 round, cache bypass). Tutte le chiamate AI hanno prodotto JSON parseabile e sono state loggate come `outcome=success` a livello `ai_client`, senza 429, timeout o fallback.
+
+Tuttavia il flusso completo `SuggestionService` ha chiuso solo 17/30 chiamate come valide. Le altre 13/30 sono fallite in modo controllato con `SuggestionError(error_code="ai_output_invalid")` durante i validatori finali:
+
+- item exact-name mismatch Data Dragon: `Blade of the Ruined King` vs `Blade of The Ruined King`;
+- item non presente nella patch/cache corrente: `Luden's Companion`, `Luden's Tempest` (vedi ERRATA-005: nella patch corrente e presente `Luden's Echo`);
+- euristica lingua: alcune explanation hanno solo 2 marker italiani invece dei 3 richiesti.
+
+### Impatto
+
+- RF-011 latenza e soddisfatto: p95_all 4166 ms, target 30000 ms.
+- RF-014 fallback non e stato esercitato: 0% fallback, 0 rate limit, 0 timeout.
+- Il problema e di affidabilita/validazione finale: un utente vedrebbe errore controllato invece di suggerimenti in circa 43% dei casi benchmark T58.
+- Non e una regressione di formato JSON: i log AI sono tutti `json_ok=true`, `format=true`, `utf8=true`.
+
+### Mitigazione proposta
+
+- Prima di T62/panel, valutare una mitigazione mirata: prompt v1.1 con enfasi su nomi item esatti Data Dragon patch corrente oppure normalizzazione/remediation lato validator per alias/capitalizzazione consentiti.
+- Non allentare i validatori alla cieca: il controllo ha intercettato un problema reale di coerenza dati.
+- Continuare T59-T61 come test tecnici previsti dal breakdown; registrare in `PROMPT_LOG.md` che T58 e chiuso come benchmark ma non come conferma di qualita output.

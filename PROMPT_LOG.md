@@ -5474,3 +5474,77 @@ Esiti: test mirati **20 passed**; suite completa **131 passed**.
 
 - T57 chiuso. M8 avviato.
 - Prossimo task: M8/T58 (`scripts/benchmark_30_calls.py`, 30 chiamate sim mode). Caveat: significativita benchmark reale resta subordinata a OPEN-002.
+
+## PLOG-2026-05-16-064 - M8/T58 benchmark 30 chiamate sim mode (script + run reale, VERDE con INC-013)
+
+- Data: 2026-05-16
+- Scope: T58 (M8) - creare ed eseguire `scripts/benchmark_30_calls.py` su 15 scenari x 2 round, cache bypass, misurando latenza, successi/errori, fallback/rate-limit e costo riportato dai log.
+- Stato: T58 CHIUSO come benchmark tecnico. RF-011 latenza VERDE. Affidabilita output aperta in INC-013. Commit/push da eseguire subito dopo questa voce.
+
+### Messaggi catalogati
+
+- USER-141: "ok procedi" (continuare dal prossimo task del breakdown dopo T57).
+- CODEX-335: legge T58 dal breakdown, `ai_client.py`, `SuggestionService`, script sim esistente, log AI e vincolo costo.
+- CODEX-336: implementa `scripts/benchmark_30_calls.py`: 15 scenari x 2 round, `BenchmarkNoCache`, report JSON in `logs/`, snapshot dei log `ai_calls_YYYY-MM-DD.jsonl`, summary p50/p95/fallback/token/cost.
+- CODEX-337: verifica compile + suite baseline 131/131, conferma `DEEPSEEK_API_KEY` presente senza stamparla e modello primario `deepseek-chat`.
+- CODEX-338: esegue benchmark reale T58 contro DeepSeek diretto.
+- CODEX-339: analizza report e log; registra INC-013 per 13/30 errori controllati `ai_output_invalid` post-validator.
+- CODEX-340: aggiorna `BREAKDOWN_STATUS.md`, `README.md`, `INCIDENTS.md` e questa PLOG-064.
+
+### File creati/modificati
+
+- `scripts/benchmark_30_calls.py` (nuovo): benchmark T58 backend/sim, cache bypass, report JSON locale `logs/benchmark_30_calls_*.json`, lettura log AI generati durante ciascuna chiamata.
+- `INCIDENTS.md`: aggiunto INC-013 (output AI JSON valido ma 13/30 falliscono i validatori finali: item exact-name Data Dragon / Luden obsoleto / euristica lingua).
+- `BREAKDOWN_STATUS.md`: T58 chiuso, prossimo T59, suite 131/131, INC-013 e OPEN-002 riallineati.
+- `README.md`: stato sintetico aggiornato a M8/T57-T58 chiusi, prossimo T59, open issues aggiornate.
+- `PROMPT_LOG.md`: questa PLOG-064.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall scripts\benchmark_30_calls.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+.\.venv\Scripts\python.exe -c "... check DEEPSEEK_API_KEY presence only ..."
+.\.venv\Scripts\python.exe scripts\benchmark_30_calls.py
+.\.venv\Scripts\python.exe -m compileall scripts\benchmark_30_calls.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: compile exit 0; suite pre-run **131 passed**; key DeepSeek presente (valore non stampato); benchmark completato; suite post-run **131 passed**.
+
+### Risultati benchmark T58
+
+- Report locale: `logs/benchmark_30_calls_20260516_212130.json` (gitignored).
+- Chiamate tentate: 30 (15 scenari x 2 round).
+- Successi end-to-end `SuggestionService`: 17/30.
+- Errori controllati: 13/30, tutti `ai_output_invalid`.
+- Latenza: p50_all 3510 ms; p95_all 4166 ms; p50_success 3540 ms; p95_success 4219 ms.
+- Target RF-011 p95 <= 30000 ms: RISPETTATO.
+- Fallback: 0/30, 0.0%.
+- Rate limit: 0; timeout: 0; validation failures a livello `ai_client` format/utf8: 0.
+- Token usage totale dai log: 25698 prompt_tokens, 9285 completion_tokens.
+- Costo totale riportato: `null` / non disponibile nella response ChatCompletion usata dal client. Non e stata inventata una stima pricing.
+
+### Analisi errori
+
+- 13 errori sono post-AI-client: `ai_client` ha loggato `outcome=success`, `json_ok=true`, `format=true`, `utf8=true`.
+- Cause osservate:
+  - `Blade of the Ruined King` non combacia con Data Dragon patch corrente, che espone `Blade of The Ruined King`;
+  - `Luden's Companion` / `Luden's Tempest` non sono nella patch corrente; ERRATA-005 aveva gia stabilito `Luden's Echo`;
+  - alcune explanation hanno 2 marker italiani invece dei 3 richiesti.
+- Impatto: T58 e verde per latenza/stabilita servizio, ma non conferma affidabilita/qualita output. INC-013 aperto per mitigazione prima di T62/panel.
+
+### DoD T58
+
+- Script `scripts/benchmark_30_calls.py`: FATTO.
+- 30 chiamate consecutive sim mode, cache bypass: ESEGUITO.
+- Report con chiamate riuscite, p95 latency, fallback %, costo totale/token: FATTO (costo reported `null`, token riportati).
+- Risultati in `PROMPT_LOG.md`: FATTO.
+- 429/backoff: non emersi.
+- p95 >30s: no, quindi nessun incidente latenza; INC-013 riguarda affidabilita output, non p95.
+
+### Decisione
+
+- T58 chiuso come benchmark tecnico.
+- Prossimo task: M8/T59 (cache hit integration test).
+- Nota: prima di T62/panel serve affrontare o accettare esplicitamente INC-013; non si allentano i validatori senza decisione.
