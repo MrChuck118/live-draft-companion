@@ -5192,3 +5192,62 @@ Esiti: compile exit 0; suite **110 passed** (105 + 7 net, 2 aggiornati); smoke r
 
 - T49b chiuso (codice + verifica). **M6b COMPLETO** (T45, T48, T49, T49b). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `app/suggestion_service.py`, `app/main.py`, `static/app.js`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M7b/T54 (endpoint `POST /api/history/feedback` -> aggiorna record via HistoryRepository, `feedback: good|bad`).
+
+## PLOG-2026-05-16-058 - Ricognizione completa post-T49b + commit/push iniziale richiesto
+
+- Data: 2026-05-16
+- Scope: richiesta utente di non costruire ancora, fare prima commit/push di quanto mancante, leggere integralmente allegati + `PROMPT_LOG.md`, analizzare stato breakdown/repo/README/incidenti e proporre piano di azione in attesa di approvazione.
+- Stato: ricognizione completata; piano da esporre all'utente. Nessuna implementazione funzionale avviata.
+
+### Messaggi catalogati
+
+- USER-136: chiede di mantenere `PROMPT_LOG.md` aggiornato a ogni iterazione, usare `INCIDENTS.md` per incidenti reali, continuare il breakdown con data odierna, leggere integralmente i file allegati e il prompt log, analizzare repo/status/discrepanze/README, proporre piano prima di costruire; subtask preliminare: commit/push di cio' che manca.
+- CODEX-309: avvia la fase preliminare, controlla stato git, diff, remote e ultimo log; rileva working tree sporco da T49b e `.claude/` non tracciato.
+- CODEX-310: esclude `.claude/` da git con `.gitignore`, tenta verifica test e rileva ambiente Python non funzionante in questa sessione.
+- CODEX-311: commit/push completati per T49b con commit `04a14fa feat(ui): T49b uniform error contract and banner`, push riuscito su `origin/main`.
+- CODEX-312: legge integralmente `LiveDraftCompanion_TechnicalSpec_v2.3.md`, `LiveDraftCompanion_SPEC_ERRATA.md`, `breakdown_tasks_v2.1_corretto.md`, `LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`, `BREAKDOWN_STATUS.md`, `INCIDENTS.md`, `SPEC_ERRATA.md`, `README.md` e `PROMPT_LOG.md`.
+- CODEX-313: identifica stato corrente: M6b chiuso, M7a chiuso, prossimo task reale M7b/T54; T40 resta in sospeso, T05b e OPEN-002 restano arretrati non bloccanti per T54.
+- CODEX-314: rileva discrepanze documentali residue da sistemare prima o insieme a T54: `BREAKDOWN_STATUS.md` contiene ancora riferimento 69/69 e commit T49b "in attesa"; `README.md` contiene frasi stale "M6a IN CORSO"/"M7a IN CORSO"; `INCIDENTS.md` va aggiornato o esteso per l'ambiente Python/venv rotto se confermato come incidente operativo.
+- CODEX-315: appende questa PLOG-058 prima dell'output finale, come richiesto.
+
+### File letti integralmente
+
+- `C:\Users\ezioc\Downloads\LiveDraftCompanion_TechnicalSpec_v2.3.md`
+- `C:\Users\ezioc\Downloads\LiveDraftCompanion_SPEC_ERRATA.md`
+- `C:\Users\ezioc\Downloads\breakdown_tasks_v2.1_corretto.md`
+- `C:\Users\ezioc\Downloads\LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md`
+- `PROMPT_LOG.md`
+- `BREAKDOWN_STATUS.md`
+- `INCIDENTS.md`
+- `SPEC_ERRATA.md`
+- `README.md`
+
+### Esiti commit/push preliminare
+
+- Working tree iniziale: modifiche T49b non ancora committate piu' `.claude/` non tracciata.
+- Azione: `.claude/` aggiunta a `.gitignore` per non versionare impostazioni locali.
+- Commit creato: `04a14fa feat(ui): T49b uniform error contract and banner`.
+- Push: riuscito su `origin/main` (`48ed05b..04a14fa`).
+
+### Verifiche e blocchi
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+where.exe python
+where.exe py
+```
+
+Esito: test NON rieseguiti in questa sessione per problema ambiente locale: `.venv\Scripts\python.exe` punta a `C:\Users\ezioc\AppData\Local\Programs\Python\Python312\python.exe`, non presente; `python` e `py` non sono in PATH. L'ultima suite valida resta quella documentata in PLOG-057: **110 passed**. Questo va registrato/gestito come incidente operativo se confermato.
+
+### Sintesi ricognizione
+
+- Fonte corrente: repo `BREAKDOWN_STATUS.md` e `PROMPT_LOG.md`; il file `LiveDraftCompanion_BREAKDOWN_STATUS_pc_its.md` e storico/stale e si ferma prima dell'avanzamento attuale.
+- Prossima task da breakdown: **M7b/T54** (`POST /api/history/feedback`, aggiornamento record history con `feedback: good|bad`).
+- Task arretrate note: T40 real draft bans/actions in sospeso; T05b panel recruitment manuale; OPEN-002 dati benchmark reali; residuo OPEN-001 revoca vecchia chiave OpenRouter; finding pytest bare command.
+- README: da aggiornare in modo leggero per rimuovere frasi stale e riallineare lo stato a M6b/M7a completi, prossimo T54.
+
+### Piano da sottoporre
+
+1. Prima correzione documentale: aggiornare `BREAKDOWN_STATUS.md`, `README.md`, e `INCIDENTS.md`/INC-004 o nuovo INC-012 per il problema Python/venv; poi aggiornare `PROMPT_LOG.md` e commit/push della sola documentazione se approvato.
+2. Gate tecnico: ripristinare o confermare un interprete Python valido prima di implementare T54, per poter rieseguire la suite.
+3. Dopo approvazione: implementare T54 in modo sottile e coerente con T49b (`HistoryRepository` update + route `POST /api/history/feedback` + contratto errori + test mirati), poi aggiornare status/log/README e commit/push.
