@@ -4899,3 +4899,43 @@ Esiti: compile exit 0; suite **89 passed** (86 + 3 T51), 0 warning (DeprecationW
 
 - T51 chiuso. Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `app/suggestion_service.py`, `tests/test_cache_service.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M7a/T52 (salvataggio cache post-chiamata - in larga parte coperto da `CacheService.set`; verifica integrazione TTL 30gg + persistenza a restart).
+
+## PLOG-2026-05-16-051 - M7a/T52 verifica salvataggio cache (persistenza + TTL 30gg) (2 test, VERDE)
+
+- Data: 2026-05-16
+- Scope: T52 (M7a) - verifica integrazione salvataggio cache post-chiamata. Nessun nuovo codice applicativo (gia coperto da T51 `CacheService.set`). T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T52 CHIUSO + DoD VERDE. Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-122: "ok commit/push, poi procedi".
+- CODEX-295: commit/push T51 (cc57934 su main); piano T52 esposto (natura: solo verifica; wiring SuggestionService->set rinviato a T45b come da breakdown; 2 test).
+- USER-123: "ok procedi".
+- CODEX-296: 2 test T52 + verifica + questa PLOG-051 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `tests/test_cache_service.py`: import `sqlite3` + `DEFAULT_TTL`; +2 test T52: `test_set_default_ttl_is_30_days` (set senza ttl -> riga con `expires_at-created_at == DEFAULT_TTL == 30gg`, model_used corretto); `test_cache_persists_on_disk` (set -> lettura raw via `sqlite3.connect("data_dragon.db")` conferma riga su disco; nuova istanza `CacheService` rilegge l'output = restart simulato).
+- Nessun file applicativo modificato: `CacheService.set` (T51) gia implementa il salvataggio con TTL 30gg di default. T52 e verifica/integrazione come da breakdown.
+- `PROMPT_LOG.md`: questa PLOG-051. `BREAKDOWN_STATUS.md`/`README.md`: T52 chiuso, suite 91/91, prossimo T53.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_cache_service.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: cache_service 5/5; suite **91 passed** (89 + 2 T52).
+
+### DoD T52
+
+- Dopo prima chiamata, riga in tabella cache: VERIFICATO (set -> riga presente, model_used corretto, TTL 30gg).
+- Sopravvive a restart server: VERIFICATO (riga su disco in `data_dragon.db` via sqlite3 raw + nuova istanza CacheService la rilegge).
+- Wiring "dopo output valido in SuggestionService -> set": RINVIATO al DoD di T45b (come prescritto dal breakdown; SuggestionService non ancora costruito a questo punto dell'ordine M7a).
+
+### Decisione
+
+- T52 chiuso (verifica). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `tests/test_cache_service.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M7a/T53 (`HistoryRepository.save(draft_state, output, model_used)`, feedback inizializzato a "unrated", chiamato da SuggestionService a T45b).
