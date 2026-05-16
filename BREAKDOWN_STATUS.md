@@ -19,8 +19,8 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 - Principio operativo: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback), ERRATA-006
 - Frontend MVP: HTML + Tailwind CDN + Vanilla JS + fetch (ERRATA-002)
-- Suite test: 93/93 PASSED (`pytest tests/`)
-- Prossimo task tecnico: M7a/T45b (`SuggestionService` orchestratore). M6a COMPLETO; M7a IN CORSO (T50-T53 chiusi, resta T45b). M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
+- Suite test: 99/99 PASSED (`pytest tests/`)
+- Prossimo task tecnico: M6b/T45 (`POST /api/suggest`). M6a + M7a COMPLETI. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
 
 ## Avanzamento per modulo
 
@@ -33,8 +33,8 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 | M4 FileProvider (T32-T35) | CHIUSO lato codice + RUNTIME CHIUSO | T35 sim mode 5/5 VALID reale su DeepSeek 2026-05-16; scenari PLUMBING (OPEN-002) |
 | M5 LCU Provider (T36-T40) | T36-T39 CHIUSI (codice+live-validati); T40 PARZIALE/IN SOSPESO | vedi sotto |
 | M6a FastAPI base + UI shell | **COMPLETO** (T41-T44+T46+T47) | main+config, launcher, `GET /`, `GET /api/draft-state`+providers, shell Tailwind, app.js polling 2s |
-| M6b suggest endpoint + UI + errori | NON iniziato | dopo M7a (flusso spec: cache+SuggestionService prima di `/api/suggest`) |
-| M7a Cache+History+SuggestionService | IN CORSO: T50-T53 CHIUSI | T50 tabelle (single-DB, ERRATA-007); T51 CacheService; T52 verifica; T53 HistoryRepository; resta T45b orchestratore |
+| M6b suggest endpoint + UI + errori | NON iniziato (prossimo: T45) | M7a pronto -> ora `/api/suggest` sottile delega a SuggestionService |
+| M7a Cache+History+SuggestionService | **COMPLETO** (T50-T53 + T45b) | tabelle single-DB; CacheService; HistoryRepository; SuggestionService orchestratore |
 | M7b storico feedback UI | NON iniziato | |
 | M8 Test sistematici (T57-T65) | NON iniziato | T58/T62 dipendono da OPEN-002 |
 | M9 Demo+packaging (T66-T71) | NON iniziato | |
@@ -90,13 +90,14 @@ Poi creare `.env` da `.env.example` con `DEEPSEEK_API_KEY` reale (mai in chat, I
 - T50 CHIUSO 2026-05-16 (`app/db.py` tabelle `cache`+`history` single-DB; ERRATA-007 + INC-011, Opzione A). Commit 92697ce su main.
 - T51 CHIUSO 2026-05-16 (`CacheService` get/set in `app/suggestion_service.py`, NON in ai_client.py; TTL 30gg). Commit cc57934 su main.
 - T52 CHIUSO 2026-05-16 (verifica salvataggio cache: TTL 30gg + persistenza su disco/restart). Commit 2a93b59 su main.
-- T53 CHIUSO 2026-05-16 (`HistoryRepository.save` -> id, `feedback=unrated`, `model_used`; suite 93/93). Wiring da SuggestionService rinviato a T45b (breakdown). Commit IN ATTESA di ok utente.
+- T53 CHIUSO 2026-05-16 (`HistoryRepository.save`). Commit 2ca52f9 su main.
+- T45b CHIUSO 2026-05-16 (`SuggestionService` orchestratore: hash->cache->prompt->AI chain->validate gate->cache+history; `get_with_model` additivo; `SuggestionError`; suite 99/99; AI mockata, runtime reale = OPEN-001 batch). **M7a COMPLETO**. Commit IN ATTESA di ok utente.
 - T40 resta in sospeso ma il breakdown procede.
-- Prossimo task: M7a/T45b (`SuggestionService` orchestratore: hash->cache->prompt->AI chain->validate->save cache+history).
+- Prossimo task: M6b/T45 (`POST /api/suggest` sottile -> SuggestionService).
 
 ## Riferimenti documentali
 
-- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-052).
+- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-053).
 - `INCIDENTS.md`: INC-001..INC-011.
 - `SPEC_ERRATA.md`: ERRATA-001..ERRATA-007.
 - `README.md`: stato sintetico corrente.

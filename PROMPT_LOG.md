@@ -4979,3 +4979,45 @@ Esiti: compile exit 0; suite **93 passed** (91 + 2 T53).
 
 - T53 chiuso. **M7a core (T50-T53) completo**; resta T45b (orchestratore). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `app/suggestion_service.py`, `tests/test_history_repository.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M7a/T45b (`SuggestionService` orchestratore: DraftStateHash -> CacheService -> PromptBuilder -> AIClient chain -> Validators -> HistoryRepository; cache miss/hit, log; dipende da T25/T29/T30/T51/T52/T53).
+
+## PLOG-2026-05-16-053 - M7a/T45b SuggestionService orchestratore (impl + 6 test, VERDE) - M7a COMPLETO
+
+- Data: 2026-05-16
+- Scope: T45b (M7a) - `SuggestionService` orchestratore in `app/suggestion_service.py`. Chiude M7a. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T45b CHIUSO + DoD VERDE (mock AI; runtime reale = OPEN-001 batch). Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-126: "ok commit/push poi procedi" (commit T53 + pianificazione T45b).
+- CODEX-299: commit/push T53 (2ca52f9 su main); verifica firme reali (build_prompt, get_suggestions_with_fallback, validators); piano T45b esposto con decisione di scope (punto 2: gate validatori senza sostituzioni/truncate) da confermare.
+- USER-127: "ok procedi" (conferma piano + scelta scope gate).
+- CODEX-300: implementazione T45b + 6 test + verifica + questa PLOG-053 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `app/suggestion_service.py`: docstring aggiornata (CacheService+HistoryRepository+SuggestionService qui). Aggiunti: `SuggestionError(RuntimeError)` (fallimento controllato, no stack trace; mapping UI = T49b); `draft_state_hash(draft_state)` puro deterministico sha256 su JSON canonico di `patch+user_role+bans+enemy_team+ally_team` (esclusi `actions`/`local_player_cell_id` volatili, documentato, coerente spec "hash su ban+pick+role"); `CacheService.get_with_model` (helper ADDITIVO, non tocca `get` di T51; serve per salvare history col model_used del cached su cache hit, richiesto dal DoD); `SuggestionService(cache, history, ai_call=get_suggestions_with_fallback)` con `suggest(draft_state)`: hash -> `get_with_model` (hit: history.save col model_used cached, ritorna cached) -> miss: `build_prompt(draft,{})` -> `ai_call` (RuntimeError -> SuggestionError) -> `validator_format` (fail -> SuggestionError) -> `_run_legality_gate` (champion/items/keystone legality + explanation_length + utf8 + language; fail -> SuggestionError) -> `cache.set` + `history.save` -> ritorna. Gate-only: rimedi graceful (sostituzione item default, truncate) NON qui (fuori DoD T45b, scelta confermata dall'utente).
+- `tests/test_suggestion_service.py` (nuovo): 6 test, AI mockato (Demo Mode First/OPEN-001), nomi DD reali da cache per passare la gate, cleanup cache(hash)+history(model_used sentinel): cache-miss (1 call, cache+history unrated), cache-hit (0 call, history col model_used cached), chain esaurita -> SuggestionError, output invalido -> SuggestionError, hash deterministico, no dati personali nei record (no summoner/gamename/displayname/api_key).
+- `PROMPT_LOG.md`: questa PLOG-053. `BREAKDOWN_STATUS.md`/`README.md`: T45b chiuso, M7a COMPLETO, suite 99/99, prossimo M6b/T45.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\suggestion_service.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: compile exit 0; suite **99 passed** (93 + 6 T45b).
+
+### DoD T45b
+
+- Cache miss -> AI -> valida -> cache + history(unrated, model_used) -> SuggestionOutput: VERIFICATO.
+- 2a chiamata stesso draft -> cache hit -> 0 chiamate AI -> cached + history col model_used cached: VERIFICATO.
+- Output sempre SuggestionOutput Pydantic-valido (anche post-cache): VERIFICATO.
+- Log JSONL per chiamate AI reali: gia coperto da ai_client T30 (qui AI mockata; runtime reale = OPEN-001 batch, Demo Mode First).
+- Nessuna API key / summoner / dato personale in prompt/log/history: VERIFICATO (test dedicato + DraftState privo di campi summoner by design T39).
+
+### Decisione
+
+- T45b chiuso. **M7a COMPLETO** (T50-T53 + T45b). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `app/suggestion_service.py`, `tests/test_suggestion_service.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M6b/T45 (endpoint sottile `POST /api/suggest` che delega a `SuggestionService`; dipende da T44, T31, T45b).
