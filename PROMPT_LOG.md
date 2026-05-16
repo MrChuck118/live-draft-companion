@@ -5324,3 +5324,49 @@ Esiti: `pip check` OK; baseline pre-T54 **110 passed**; compile exit 0; test mir
 
 - T54 chiuso. M7b avviato.
 - Prossimo task: M7b/T55 (`GET /api/history`, ultime 50 entries).
+
+## PLOG-2026-05-16-061 - M7b/T55 endpoint GET history (impl + 3 test, VERDE)
+
+- Data: 2026-05-16
+- Scope: T55 (M7b) - endpoint `GET /api/history` che restituisce la lista delle ultime 50 entry dello storico.
+- Stato: T55 CHIUSO + DoD VERDE. Commit/push da eseguire subito dopo questa voce.
+
+### Messaggi catalogati
+
+- USER-138: "procedi" (continuare dal prossimo task del breakdown dopo T54).
+- CODEX-323: conferma repo pulita e legge requisiti T55 dal breakdown (`GET /api/history`, ultime 50 entries, JSON array).
+- CODEX-324: implementa `HistoryItem`, `HistoryRepository.list_recent(limit=50)` e route `GET /api/history`.
+- CODEX-325: aggiunge 3 test T55 (repository newest-first+cap 50, endpoint JSON array DB reale, endpoint vuoto array).
+- CODEX-326: esegue compile, test mirati e suite completa; aggiorna status/README/PLOG.
+
+### File modificati
+
+- `app/models.py`: aggiunto `HistoryItem` (`id`, `timestamp`, `draft_state`, `output`, `model_used`, `feedback`) per risposta `GET /api/history`.
+- `app/suggestion_service.py`: aggiunto `HistoryRepository.list_recent(limit=50)`, ordinato per `timestamp desc, id desc`, clamp massimo 50, parsing JSON in modelli Pydantic.
+- `app/main.py`: aggiunto `GET /api/history` con `response_model=list[HistoryItem]`, errore controllato `history_unavailable` se DB/JSON non disponibile.
+- `tests/test_history_repository.py`: +1 test T55 su 55 righe -> 50 piu recenti, newest-first, modelli parsati.
+- `tests/test_main.py`: +2 test T55 (fetch DB reale -> array entries; storico vuoto -> `[]`).
+- `BREAKDOWN_STATUS.md`: T55 chiuso, suite 118/118, prossimo T56.
+- `README.md`: stato sintetico aggiornato a M7b/T54-T55 chiusi, prossimo T56.
+- `PROMPT_LOG.md`: questa PLOG-061.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\main.py app\models.py app\suggestion_service.py -q
+.\.venv\Scripts\python.exe -m pytest tests\test_history_repository.py tests\test_main.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: compile exit 0; test mirati **30 passed**; suite completa **118 passed**.
+
+### DoD T55
+
+- `GET /api/history` restituisce JSON array di entries: VERIFICATO.
+- Ultime 50 entry, newest-first: VERIFICATO a livello repository.
+- Shape pronta per T56 (`id`, `output`, `feedback`, `draft_state`, `model_used`, `timestamp`): VERIFICATO.
+
+### Decisione
+
+- T55 chiuso. M7b continua.
+- Prossimo task: M7b/T56 (UI sezione storico + bottoni feedback `good|bad`, riuso banner errori T49b).

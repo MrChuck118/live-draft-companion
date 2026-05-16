@@ -19,8 +19,8 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 - Principio operativo: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback), ERRATA-006
 - Frontend MVP: HTML + Tailwind CDN + Vanilla JS + fetch (ERRATA-002)
-- Suite test: 115/115 PASSED (`pytest tests/`)
-- Prossimo task tecnico: M7b/T55 (`GET /api/history`). M6a + M6b + M7a COMPLETI; M7b/T54 CHIUSO. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
+- Suite test: 118/118 PASSED (`pytest tests/`)
+- Prossimo task tecnico: M7b/T56 (UI storico + feedback). M6a + M6b + M7a COMPLETI; M7b/T54-T55 CHIUSI. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
 
 ## Avanzamento per modulo
 
@@ -35,7 +35,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 | M6a FastAPI base + UI shell | **COMPLETO** (T41-T44+T46+T47) | main+config, launcher, `GET /`, `GET /api/draft-state`+providers, shell Tailwind, app.js polling 2s |
 | M6b suggest endpoint + UI + errori | **COMPLETO** (T45+T48+T49+T49b) | endpoint sottile; render 3 card; spinner+disclaimer; contratto errori uniforme + banner UI + log ERROR |
 | M7a Cache+History+SuggestionService | **COMPLETO** (T50-T53 + T45b) | tabelle single-DB; CacheService; HistoryRepository; SuggestionService orchestratore |
-| M7b storico feedback UI | IN CORSO (T54 chiuso; prossimo T55) | T54 endpoint feedback chiuso; T55 GET history, T56 UI storico |
+| M7b storico feedback UI | IN CORSO (T54-T55 chiusi; prossimo T56) | T54 endpoint feedback chiuso; T55 GET history chiuso; T56 UI storico |
 | M8 Test sistematici (T57-T65) | NON iniziato | T58/T62 dipendono da OPEN-002 |
 | M9 Demo+packaging (T66-T71) | NON iniziato | |
 | M10 Presentazione (T72-T73) | NON iniziato | |
@@ -54,7 +54,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 
 - M0-M4 completi lato codice; M3/M4 runtime AI reale chiuso su DeepSeek (OPEN-001 parte runtime).
 - M5/T36-T39 chiusi lato codice E validati live su PC casa (lockfile/psutil/`E:\`, auth, gameflow, champ-select parsing, mapping, privacy 10.1).
-- Suite 115/115 PASSED.
+- Suite 118/118 PASSED.
 
 ## Cosa e' IN SOSPESO
 
@@ -63,7 +63,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 3. **OPEN-001 residuo**: revocare la API key OpenRouter esposta in chat (`...e26d34`) su openrouter.ai (INC-007). Non blocca codice (provider = DeepSeek).
 4. **T58/T62**: benchmark p95 e panel valutatori, subordinati a OPEN-002.
 5. **T05b**: reclutamento panel valutatori (1-2 amici Gold/Plat+), azione manuale utente non ancora fatta.
-6. **Finding pytest** (PLOG-2026-05-15-032): `pytest` nudo dalla root collide su basename `test_sim_mode.py` (scripts vs tests). Workaround: usare `pytest tests/` (atteso 115/115 quando l'ambiente Python e funzionante). Fix opzionale non bloccante.
+6. **Finding pytest** (PLOG-2026-05-15-032): `pytest` nudo dalla root collide su basename `test_sim_mode.py` (scripts vs tests). Workaround: usare `pytest tests/` (atteso 118/118 quando l'ambiente Python e funzionante). Fix opzionale non bloccante.
 
 ## Come riprendere
 
@@ -78,7 +78,7 @@ python -c "import asyncio; from app.data_dragon import populate_cache; asyncio.r
 
 Poi creare `.env` da `.env.example` con `DEEPSEEK_API_KEY` reale (mai in chat, INC-007).
 
-- Test completi: `.\.venv\Scripts\python.exe -m pytest tests/` (atteso 115/115; se fallisce per interprete mancante, vedi INC-012 e ricrea la venv con un Python 3.12 valido).
+- Test completi: `.\.venv\Scripts\python.exe -m pytest tests/` (atteso 118/118; se fallisce per interprete mancante, vedi INC-012 e ricrea la venv con un Python 3.12 valido).
 - Verifica live LCU (T40): aprire LoL, entrare in champ select, poi
   `$env:PYTHONPATH="."; .\.venv\Scripts\python.exe scripts\lcu_live_check.py`.
 - T41 CHIUSO 2026-05-16 (`app/main.py` FastAPI + lifecycle, `app/config.py` pydantic-settings; uvicorn runtime VERDE). Commit 3457994 su main.
@@ -97,12 +97,13 @@ Poi creare `.env` da `.env.example` con `DEEPSEEK_API_KEY` reale (mai in chat, I
 - T49 CHIUSO 2026-05-16 (spinner + disclaimer RF-019 sopra suggerimenti). Commit 48ed05b su main.
 - T49b CHIUSO 2026-05-16 (contratto errori uniforme `{error_code,user_message}` 422/502/503, handler RequestValidationError, log ERROR `logs/errors.log`, banner UI showError/clearError/scrollIntoView, bottone mai disabilitato; suite 110/110; smoke reale conforme). **M6b COMPLETO**. Nessun nuovo pattern errore -> niente INCIDENTS. Commit 04a14fa su main.
 - T54 CHIUSO 2026-05-16 (`POST /api/history/feedback` -> `HistoryRepository.update_feedback`, validazione `good|bad`, 404 record assente, contratto errori uniforme; suite 115/115). M7b avviato.
+- T55 CHIUSO 2026-05-16 (`GET /api/history` -> array JSON ultime 50 entries, newest-first, con `id`, `timestamp`, `draft_state`, `output`, `model_used`, `feedback`; suite 118/118).
 - T40 resta in sospeso ma il breakdown procede.
-- Prossimo task: M7b/T55 (`GET /api/history` -> ultime 50 entries).
+- Prossimo task: M7b/T56 (UI storico con bottoni feedback e banner errori T49b).
 
 ## Riferimenti documentali
 
-- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-060).
+- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-061).
 - `INCIDENTS.md`: INC-001..INC-012.
 - `SPEC_ERRATA.md`: ERRATA-001..ERRATA-007.
 - `README.md`: stato sintetico corrente.

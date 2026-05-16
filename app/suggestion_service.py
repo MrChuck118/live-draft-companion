@@ -11,9 +11,11 @@ import hashlib
 import json
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import select
+
 from app.ai_client import get_suggestions_with_fallback
 from app.db import AsyncSessionLocal, CacheEntry, HistoryEntry
-from app.models import DraftState, SuggestionOutput
+from app.models import DraftState, HistoryItem, SuggestionOutput
 from app.prompt_builder import build_prompt
 from app.validators import (
     validator_champion_legality,
@@ -162,6 +164,30 @@ class HistoryRepository:
                     return False
                 entry.feedback = feedback
                 return True
+
+    async def list_recent(self, limit: int = 50) -> list[HistoryItem]:
+        """Return the newest history entries first (T55)."""
+        safe_limit = max(1, min(limit, 50))
+        async with self._session_factory() as session:
+            rows = (
+                await session.scalars(
+                    select(HistoryEntry)
+                    .order_by(HistoryEntry.timestamp.desc(), HistoryEntry.id.desc())
+                    .limit(safe_limit)
+                )
+            ).all()
+
+        return [
+            HistoryItem(
+                id=row.id,
+                timestamp=row.timestamp,
+                draft_state=DraftState.model_validate_json(row.draft_state_json),
+                output=SuggestionOutput.model_validate_json(row.output_json),
+                model_used=row.model_used,
+                feedback=row.feedback,
+            )
+            for row in rows
+        ]
 
 
 class SuggestionService:

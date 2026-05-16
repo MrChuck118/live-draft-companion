@@ -19,13 +19,13 @@ def _draft(role: str) -> DraftState:
     )
 
 
-def _output() -> SuggestionOutput:
+def _output(champion_prefix: str = "Champ") -> SuggestionOutput:
     return SuggestionOutput(
         patch="16.10.1",
         suggestions=[
             SuggestionItem(
                 rank=i,
-                champion=f"Champ{i}",
+                champion=f"{champion_prefix}{i}",
                 build_path=["Item A", "Item B", "Item C"],
                 keystone="Conqueror",
                 explanation="Buona scelta per il draft.",
@@ -123,3 +123,30 @@ async def test_update_feedback_missing_or_invalid() -> None:
 
     with pytest.raises(ValueError):
         await repo.update_feedback(999_999_999, "unrated")
+
+
+@pytest.mark.asyncio
+async def test_list_recent_returns_newest_first_and_caps_at_50() -> None:
+    """DoD T55 repository: latest 50 entries, newest first, parsed models."""
+    await init_db()
+    repo = HistoryRepository()
+    ids: list[int] = []
+    try:
+        for index in range(55):
+            history_id = await repo.save(
+                _draft("MID"),
+                _output(champion_prefix=f"T55_{index}_"),
+                model_used=f"t55-model-{index}",
+            )
+            ids.append(history_id)
+
+        entries = await repo.list_recent()
+
+        assert len(entries) == 50
+        assert [entry.id for entry in entries] == sorted(ids, reverse=True)[:50]
+        assert entries[0].model_used == "t55-model-54"
+        assert entries[0].output.suggestions[0].champion == "T55_54_1"
+        assert entries[0].draft_state.user_role == "MID"
+        assert entries[0].feedback == "unrated"
+    finally:
+        await _delete(ids)

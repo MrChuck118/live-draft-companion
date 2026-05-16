@@ -30,7 +30,7 @@ from app.config import get_settings
 from app.data_dragon import check_patch_and_refresh
 from app.db import init_db
 from app.lcu_provider import LockfileError
-from app.models import DraftState
+from app.models import DraftState, HistoryItem
 from app.providers import get_draft_state_provider
 from app.suggestion_service import (
     HistoryRepository,
@@ -225,3 +225,16 @@ async def history_feedback(request: HistoryFeedbackRequest):
         "history_id": request.history_id,
         "feedback": request.feedback,
     }
+
+
+@app.get("/api/history", response_model=list[HistoryItem])
+async def history():
+    """Return the latest 50 history entries, newest first (M7b/T55)."""
+    try:
+        return await HistoryRepository().list_recent(limit=50)
+    except (SQLAlchemyError, ValueError) as exc:
+        return _error_response(
+            "history_unavailable",
+            "Storico non disponibile, riprova.",
+            f"{type(exc).__name__}: {exc}",
+        )

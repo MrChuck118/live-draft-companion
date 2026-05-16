@@ -506,3 +506,74 @@ def test_history_feedback_missing_row_returns_404(monkeypatch) -> None:
 
     assert response.status_code == 404
     assert response.json()["error_code"] == "history_not_found"
+
+
+# --- T55: GET /api/history ---
+
+
+def test_history_endpoint_returns_latest_entries_json_array(monkeypatch) -> None:
+    """DoD T55: GET /api/history returns a JSON array of history entries."""
+    _mock_lifecycle(monkeypatch)
+
+    async def seed_history() -> list[int]:
+        from app.db import init_db
+        from app.models import DraftState
+        from app.suggestion_service import HistoryRepository
+
+        await init_db()
+        repo = HistoryRepository()
+        ids: list[int] = []
+        for model_used in ("t55-old", "t55-new"):
+            ids.append(
+                await repo.save(
+                    DraftState.model_validate(_VALID_DRAFT_BODY),
+                    _sample_suggestion_output(),
+                    model_used=model_used,
+                )
+            )
+        return ids
+
+    async def cleanup(ids: list[int]) -> None:
+        from app.db import AsyncSessionLocal, HistoryEntry
+
+        async with AsyncSessionLocal() as session:
+            async with session.begin():
+                for history_id in ids:
+                    row = await session.get(HistoryEntry, history_id)
+                    if row is not None:
+                        await session.delete(row)
+
+    ids = asyncio.run(seed_history())
+    try:
+        with TestClient(main.app) as client:
+            response = client.get("/api/history")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert isinstance(body, list)
+        assert len(body) >= 2
+        assert body[0]["id"] == max(ids)
+        assert body[0]["model_used"] == "t55-new"
+        assert body[0]["feedback"] == "unrated"
+        assert body[0]["draft_state"]["user_role"] == "MID"
+        assert len(body[0]["output"]["suggestions"]) == 3
+    finally:
+        asyncio.run(cleanup(ids))
+
+
+def test_history_endpoint_empty_returns_array(monkeypatch) -> None:
+    """Empty history is still a JSON array, which T56 can render directly."""
+    _mock_lifecycle(monkeypatch)
+
+    class EmptyHistoryRepository:
+        async def list_recent(self, limit=50):
+            assert limit == 50
+            return []
+
+    monkeypatch.setattr(main, "HistoryRepository", lambda: EmptyHistoryRepository())
+
+    with TestClient(main.app) as client:
+        response = client.get("/api/history")
+
+    assert response.status_code == 200
+    assert response.json() == []

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -48,3 +51,14 @@ class SuggestionOutput(BaseModel):
 
     patch: str
     suggestions: list[SuggestionItem] = Field(min_length=3, max_length=3)
+
+
+class HistoryItem(BaseModel):
+    """One persisted suggestion entry exposed by GET /api/history (T55)."""
+
+    id: int
+    timestamp: datetime
+    draft_state: DraftState
+    output: SuggestionOutput
+    model_used: str
+    feedback: Literal["unrated", "good", "bad"]
