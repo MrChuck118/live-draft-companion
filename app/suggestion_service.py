@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
@@ -26,6 +27,8 @@ from app.validators import (
     validator_language,
     validator_utf8_encoding,
 )
+
+logger = logging.getLogger("live_draft_companion")
 
 
 class SuggestionError(RuntimeError):
@@ -215,6 +218,7 @@ class SuggestionService:
         cached = await self._cache.get_with_model(state_hash)
         if cached is not None:
             output, model_used = cached
+            logger.info("cache hit draft_state_hash=%s model_used=%s", state_hash, model_used)
             await self._history.save(draft_state, output, model_used)
             return output
 

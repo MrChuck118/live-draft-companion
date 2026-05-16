@@ -119,7 +119,7 @@ async def test_cache_miss_calls_ai_caches_and_saves_history() -> None:
 
 
 @pytest.mark.asyncio
-async def test_cache_hit_no_ai_call() -> None:
+async def test_cache_hit_no_ai_call(caplog) -> None:
     await init_db()
     draft = _draft("ADC")
     state_hash = draft_state_hash(draft)
@@ -132,9 +132,12 @@ async def test_cache_hit_no_ai_call() -> None:
             raise AssertionError("AI must not be called on a cache hit")
 
         service = SuggestionService(ai_call=fail_ai)
-        result = await service.suggest(draft)
+        with caplog.at_level("INFO", logger="live_draft_companion"):
+            result = await service.suggest(draft)
 
         assert result.model_dump() == output.model_dump()
+        assert "cache hit" in caplog.text
+        assert state_hash in caplog.text
         async with AsyncSessionLocal() as session:
             hist = (
                 await session.execute(

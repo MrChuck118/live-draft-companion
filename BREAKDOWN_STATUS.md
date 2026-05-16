@@ -19,8 +19,8 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 - Principio operativo: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback), ERRATA-006
 - Frontend MVP: HTML + Tailwind CDN + Vanilla JS + fetch (ERRATA-002)
-- Suite test: 131/131 PASSED (`pytest tests/`)
-- Prossimo task tecnico: M8/T59 (cache hit integration test). M6a + M6b + M7a + M7b COMPLETI; M8/T57-T58 CHIUSI. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
+- Suite test: 132/132 PASSED (`pytest tests/`)
+- Prossimo task tecnico: M8/T60 (fallback chain integration test). M6a + M6b + M7a + M7b COMPLETI; M8/T57-T59 CHIUSI. M5/T40 resta IN SOSPESO (vedi In sospeso), procede per scelta utente
 
 ## Avanzamento per modulo
 
@@ -36,7 +36,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 | M6b suggest endpoint + UI + errori | **COMPLETO** (T45+T48+T49+T49b) | endpoint sottile; render 3 card; spinner+disclaimer; contratto errori uniforme + banner UI + log ERROR |
 | M7a Cache+History+SuggestionService | **COMPLETO** (T50-T53 + T45b) | tabelle single-DB; CacheService; HistoryRepository; SuggestionService orchestratore |
 | M7b storico feedback UI | **COMPLETO** (T54-T56) | T54 endpoint feedback; T55 GET history; T56 UI storico + feedback |
-| M8 Test sistematici (T57-T65) | IN CORSO (T57-T58 chiusi; prossimo T59) | 15 mock draft strutturali in repo; T58 plumbing benchmark eseguito; qualita output aperta in INC-013; T62 resta dipendente da OPEN-002/T05b |
+| M8 Test sistematici (T57-T65) | IN CORSO (T57-T59 chiusi; prossimo T60) | 15 mock draft strutturali in repo; T58 plumbing benchmark eseguito; T59 cache hit OK; qualita output aperta in INC-013; T62 resta dipendente da OPEN-002/T05b |
 | M9 Demo+packaging (T66-T71) | NON iniziato | |
 | M10 Presentazione (T72-T73) | NON iniziato | |
 
@@ -54,7 +54,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 
 - M0-M4 completi lato codice; M3/M4 runtime AI reale chiuso su DeepSeek (OPEN-001 parte runtime).
 - M5/T36-T39 chiusi lato codice E validati live su PC casa (lockfile/psutil/`E:\`, auth, gameflow, champ-select parsing, mapping, privacy 10.1).
-- Suite 131/131 PASSED.
+- Suite 132/132 PASSED.
 
 ## Cosa e' IN SOSPESO
 
@@ -63,7 +63,7 @@ avanti lo stato forward-looking vive qui + nel `PROMPT_LOG.md`.
 3. **OPEN-001 residuo**: revocare la API key OpenRouter esposta in chat (`...e26d34`) su openrouter.ai (INC-007). Non blocca codice (provider = DeepSeek).
 4. **T62 / benchmark reale semantico**: panel valutatori e giudizio qualita subordinati a OPEN-002 + T05b.
 5. **T05b**: reclutamento panel valutatori (1-2 amici Gold/Plat+), azione manuale utente non ancora fatta.
-6. **Finding pytest** (PLOG-2026-05-15-032): `pytest` nudo dalla root collide su basename `test_sim_mode.py` (scripts vs tests). Workaround: usare `pytest tests/` (atteso 131/131 quando l'ambiente Python e funzionante). Fix opzionale non bloccante.
+6. **Finding pytest** (PLOG-2026-05-15-032): `pytest` nudo dalla root collide su basename `test_sim_mode.py` (scripts vs tests). Workaround: usare `pytest tests/` (atteso 132/132 quando l'ambiente Python e funzionante). Fix opzionale non bloccante.
 
 ## Come riprendere
 
@@ -78,7 +78,7 @@ python -c "import asyncio; from app.data_dragon import populate_cache; asyncio.r
 
 Poi creare `.env` da `.env.example` con `DEEPSEEK_API_KEY` reale (mai in chat, INC-007).
 
-- Test completi: `.\.venv\Scripts\python.exe -m pytest tests/` (atteso 131/131; se fallisce per interprete mancante, vedi INC-012 e ricrea la venv con un Python 3.12 valido).
+- Test completi: `.\.venv\Scripts\python.exe -m pytest tests/` (atteso 132/132; se fallisce per interprete mancante, vedi INC-012 e ricrea la venv con un Python 3.12 valido).
 - Verifica live LCU (T40): aprire LoL, entrare in champ select, poi
   `$env:PYTHONPATH="."; .\.venv\Scripts\python.exe scripts\lcu_live_check.py`.
 - T41 CHIUSO 2026-05-16 (`app/main.py` FastAPI + lifecycle, `app/config.py` pydantic-settings; uvicorn runtime VERDE). Commit 3457994 su main.
@@ -101,12 +101,13 @@ Poi creare `.env` da `.env.example` con `DEEPSEEK_API_KEY` reale (mai in chat, I
 - T56 CHIUSO 2026-05-16 (`static/app.js` storico UI: fetch `GET /api/history`, render righe compatte, bottoni `Utile`/`Inutile` -> `POST /api/history/feedback`, conferma visiva `aria-pressed`, banner T49b sugli errori; suite 119/119). **M7b COMPLETO**.
 - T57 CHIUSO 2026-05-16 (15 scenari JSON in `tests/mock_drafts/`, 3 per ruolo TOP/JUNGLE/MID/ADC/SUPPORT, copertura AD-heavy/AP-heavy/balanced + edge first/last pick, aggressive bans, meta picks out; tutti caricabili via FileProvider; suite 131/131). Nota: scenari PLUMBING, non dati benchmark reali OPEN-002.
 - T58 CHIUSO 2026-05-16 (`scripts/benchmark_30_calls.py`; 30 chiamate reali DeepSeek in sim mode, cache bypass; 17/30 success, p95_all 4166 ms <= 30000 ms, fallback 0%, rate limit 0, timeout 0, token usage 25698 prompt / 9285 completion, cost reported `null` per response SDK; report `logs/benchmark_30_calls_20260516_212130.json`). INC-013 aperto per 13/30 `ai_output_invalid` post-validator.
+- T59 CHIUSO 2026-05-16 (`scripts/test_cache_hit.py`; scenario `last_pick_support` eseguito 2 volte: prima run 1 riga `logs/ai_calls_*.jsonl`, seconda run 0 righe, log `cache hit` presente; suite 132/132). Primo tentativo su `ad_heavy_top` ha confermato INC-013 (`ai_output_invalid`), poi scenario stabile OK.
 - T40 resta in sospeso ma il breakdown procede.
-- Prossimo task: M8/T59 (cache hit integration test).
+- Prossimo task: M8/T60 (fallback chain integration test).
 
 ## Riferimenti documentali
 
-- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-064).
+- `PROMPT_LOG.md`: registro iterazioni (ultimo: PLOG-2026-05-16-065).
 - `INCIDENTS.md`: INC-001..INC-013.
 - `SPEC_ERRATA.md`: ERRATA-001..ERRATA-007.
 - `README.md`: stato sintetico corrente.

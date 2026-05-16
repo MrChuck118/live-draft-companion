@@ -5548,3 +5548,66 @@ Esiti: compile exit 0; suite pre-run **131 passed**; key DeepSeek presente (valo
 - T58 chiuso come benchmark tecnico.
 - Prossimo task: M8/T59 (cache hit integration test).
 - Nota: prima di T62/panel serve affrontare o accettare esplicitamente INC-013; non si allentano i validatori senza decisione.
+
+## PLOG-2026-05-16-065 - M8/T59 cache hit integration (script + run reale, VERDE)
+
+- Data: 2026-05-16
+- Scope: T59 (M8) - verificare due esecuzioni identiche consecutive: prima run con chiamata AI reale, seconda run servita da cache, log `"cache hit"` presente e 0 nuove righe in `logs/ai_calls_*.jsonl`.
+- Stato: T59 CHIUSO. Commit/push da eseguire subito dopo questa voce.
+
+### Messaggi catalogati
+
+- USER-142: "ok procedi, ricordati i paletti che ti ho imposto e di aggiornare sempre il prompt log e il breakdown staus".
+- CODEX-341: legge requisito T59 nel breakdown, controlla stato repo e codice cache/log AI in `SuggestionService`.
+- CODEX-342: aggiunge logging esplicito `"cache hit"` nel ramo cache-hit di `SuggestionService.suggest`.
+- CODEX-343: crea `scripts/test_cache_hit.py` per scenario identico due volte, conteggio righe `logs/ai_calls_YYYY-MM-DD.jsonl`, pulizia mirata della sola cache entry e report console.
+- CODEX-344: aggiunge copertura test su script/cache log e aggiorna il test servizio per verificare il log con `caplog`.
+- CODEX-345: esegue primo run reale su `ad_heavy_top`; il primo giro fallisce per pattern gia registrato in INC-013 (`ai_output_invalid`, marker italiano insufficiente), quindi il test viene reso a errore controllato senza traceback.
+- CODEX-346: riesegue T59 su scenario stabile `last_pick_support`: prima run 1 chiamata AI, seconda run 0 chiamate AI, log `"cache hit"` presente.
+- CODEX-347: riesegue suite completa, aggiorna `BREAKDOWN_STATUS.md`, `README.md`, `INCIDENTS.md` e questa PLOG-065.
+
+### File creati/modificati
+
+- `app/suggestion_service.py`: logger `live_draft_companion` e log `cache hit draft_state_hash=... model_used=...` quando il risultato viene servito da cache.
+- `scripts/test_cache_hit.py` (nuovo): script T59 con setup DB/Data Dragon, pulizia cache mirata, doppia esecuzione identica e conteggio log AI.
+- `tests/test_cache_hit_script.py` (nuovo): verifica statica mirata dello script T59.
+- `tests/test_suggestion_service.py`: il test cache-hit ora verifica anche il log `"cache hit"`.
+- `BREAKDOWN_STATUS.md`: T59 chiuso, suite 132/132, prossimo M8/T60.
+- `README.md`: stato riassuntivo aggiornato a M8/T57-T59 chiusi, prossimo T60.
+- `INCIDENTS.md`: nota su T59 aggiunta dentro INC-013; nessun nuovo incidente aperto.
+- `PROMPT_LOG.md`: questa PLOG-065.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\suggestion_service.py scripts\test_cache_hit.py -q
+.\.venv\Scripts\python.exe -m pytest tests\test_suggestion_service.py tests\test_cache_hit_script.py -q
+.\.venv\Scripts\python.exe scripts\test_cache_hit.py --scenario ad_heavy_top
+.\.venv\Scripts\python.exe scripts\test_cache_hit.py --scenario last_pick_support
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: compile exit 0; test mirati **7 passed**; run reale `ad_heavy_top` non chiuso per conferma INC-013; run reale `last_pick_support` VERDE; suite completa **132 passed**.
+
+### Risultati T59
+
+- Scenario valido usato per il DoD: `last_pick_support`.
+- `draft_state_hash`: `2b1dd831426ff1a90a3d1510e1691835051fb12991896c13eb83bd196c889320`.
+- Prima esecuzione: `ai_calls_first_run=1`.
+- Seconda esecuzione identica: `ai_calls_second_run=0`.
+- Log applicativo presente: `cache hit draft_state_hash=2b1dd831426ff1a90a3d1510e1691835051fb12991896c13eb83bd196c889320 model_used=deepseek-v4-flash`.
+
+### DoD T59
+
+- Test/cache script: FATTO (`scripts/test_cache_hit.py`).
+- Stesso scenario eseguito due volte: FATTO (`last_pick_support`).
+- Seconda run senza nuove chiamate AI in `logs/ai_calls_*.jsonl`: FATTO (`0` nuove righe).
+- Log `"cache hit"` presente sulla seconda run: FATTO.
+- Conteggio AI calls per due run sequenziali identiche = 1 totale: FATTO.
+
+### Decisione
+
+- T59 chiuso.
+- M8 prosegue.
+- Prossimo task: M8/T60 (fallback chain integration test).
+- INC-013 resta aperto e confermato dal primo tentativo su `ad_heavy_top`; non e stato aperto un nuovo incidente.

@@ -408,3 +408,7 @@ Tuttavia il flusso completo `SuggestionService` ha chiuso solo 17/30 chiamate co
 - Prima di T62/panel, valutare una mitigazione mirata: prompt v1.1 con enfasi su nomi item esatti Data Dragon patch corrente oppure normalizzazione/remediation lato validator per alias/capitalizzazione consentiti.
 - Non allentare i validatori alla cieca: il controllo ha intercettato un problema reale di coerenza dati.
 - Continuare T59-T61 come test tecnici previsti dal breakdown; registrare in `PROMPT_LOG.md` che T58 e chiuso come benchmark ma non come conferma di qualita output.
+
+### Nota successiva
+
+- T59 (2026-05-16): primo tentativo cache-hit su `ad_heavy_top` ha fallito il primo run reale per lo stesso pattern (`ai_output_invalid`, explanation con 1 marker italiano). Non e un nuovo incidente: conferma INC-013. Il test T59 e poi passato su `last_pick_support`.

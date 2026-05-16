@@ -13,9 +13,9 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 - Modalita operativa: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback). Strategia A/B OpenRouter superata (vedi ERRATA-006, 2026-05-15)
 - Frontend MVP: HTML, Tailwind CDN, Vanilla JS + fetch
-- Stato codice applicativo: M3 e M4 chiusi; M5/T36-T39 chiusi lato codice e validati live su PC casa; M6a COMPLETO; M7a COMPLETO; M6b COMPLETO; M7b COMPLETO; M8 IN CORSO con T57-T58 chiusi (15 mock draft strutturali + benchmark 30 chiamate sim mode). Suite valida: 131/131 PASSED (`pytest tests/`). Nota ambiente: venv ripristinata dopo INC-012.
+- Stato codice applicativo: M3 e M4 chiusi; M5/T36-T39 chiusi lato codice e validati live su PC casa; M6a COMPLETO; M7a COMPLETO; M6b COMPLETO; M7b COMPLETO; M8 IN CORSO con T57-T59 chiusi (15 mock draft, benchmark 30 chiamate, cache hit integration). Suite valida: 132/132 PASSED (`pytest tests/`). Nota ambiente: venv ripristinata dopo INC-012.
 - M5/T40 IN SOSPESO: integrazione live validata, ma DoD numerico (>=5 bans, >=10 actions) non riproducibile in custom-vs-bot (INC-010, conferma spec 14.2/INC-001); da rieseguire `scripts/lcu_live_check.py` in un draft reale con ban. Mitigazione gia attiva (sim mode 5/5). Il breakdown procede comunque (scelta utente)
-- Prossimo task tecnico: M8/T59 (cache hit integration test); chiusura T40 quando disponibile un draft reale con ban
+- Prossimo task tecnico: M8/T60 (fallback chain integration test); chiusura T40 quando disponibile un draft reale con ban
 - Stato dettagliato e cose in sospeso: vedi `BREAKDOWN_STATUS.md`
 - Open issues (da rivedere): OPEN-001 - parte runtime sbloccabile CHIUSA su DeepSeek (T27/T31/T35/T58 verdi lato latenza, INC-008 risolto, ERRATA-006); residui: revocare la key OpenRouter esposta (INC-007); OPEN-002 dati scenario benchmark 09/05 (test_scenarios.md) NON nel repo, utente li aggiunge da casa; T62/panel resta subordinato a OPEN-002 + T05b; INC-013 segnala affidabilita output T58 (13/30 `ai_output_invalid`).
 
