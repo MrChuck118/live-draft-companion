@@ -4605,3 +4605,47 @@ Esiti: compile exit 0; suite **73 passed** (69 baseline + 4 T41); uvicorn avvio 
 - T41 chiuso (codice + runtime). M6a avviato.
 - Nessun commit/push: working tree accumula `app/config.py`, `app/main.py`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md` fino a OK utente.
 - Prossimo task: M6a/T42 (`launcher.py` con auto-browser + port fallback 8000->8003).
+
+## PLOG-2026-05-16-044 - M6a/T42 launcher in-process uvicorn + port fallback + auto-browser (impl + 6 test, runtime VERDE)
+
+- Data: 2026-05-16
+- Scope: T42 (M6a) - `launcher.py` root. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T42 CHIUSO lato codice + DoD runtime VERDE. Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-106: "vai di commit/push e poi pianifica per la prossima task, ricordati dei paletti e delle mie richieste".
+- CODEX-279: commit/push T41 (3457994 su main); piano T42 esposto (launcher.py + test + verifica + docs), in attesa approvazione.
+- USER-107: "procedi".
+- CODEX-280: implementazione T42 + 6 test + verifica runtime reale + questa PLOG-044 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `launcher.py` (nuovo, root): `find_free_port([8000..8003])` (probe via socket bind), `wait_for_port` (connect loop, timeout 5s), `_build_server` (`uvicorn.Server`+`Config`, IN-PROCESS, non comando esterno -> packaging-safe per PyInstaller T66/T67), `main()` -> porta libera -> server in thread daemon -> attesa ascolto -> `webbrowser.open` -> log porta; tutte occupate -> messaggio "Nessuna porta libera 8000-8003" + exit 1; KeyboardInterrupt -> `should_exit`.
+- `tests/test_launcher.py` (nuovo): 6 test ermetici (porte effimere OS-assigned, niente reliance su 8000-8003 liberi; uvicorn/webbrowser mockati): find_free_port skip-busy / all-busy-None; wait_for_port closed-False / listening-True; main apre browser su porta scelta; main ritorna 1 se nessuna porta libera (browser NON aperto).
+- `PROMPT_LOG.md`: questa PLOG-044. `BREAKDOWN_STATUS.md`/`README.md`: T42 chiuso, suite 79/79, prossimo T43.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall launcher.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+# smoke reale: webbrowser stubbato, uvicorn reale serve l'app
+#  CASE A (8000 libera) -> find_free_port 8000, GET /docs HTTP 200
+#  CASE B (8000 occupata) -> fallback 8001, GET /docs HTTP 200
+```
+
+Esiti: compile exit 0; suite **79 passed** (73 + 6 T42); smoke reale: CASE A porta 8000 HTTP 200, CASE B fallback automatico 8001 HTTP 200, server in-process avvio/shutdown puliti.
+
+### DoD T42
+
+- 8000 libera -> apre http://localhost:8000: VERIFICATO (smoke reale).
+- 8000 occupata -> porta successiva libera, porta loggata: VERIFICATO (fallback 8001 reale).
+- Tutte 4 occupate -> exit code != 0 + messaggio chiaro: VERIFICATO (test `main` -> 1, browser non aperto).
+- Stesso launcher dev e .exe: uvicorn IN-PROCESS (non comando esterno) -> packaging-safe; test reale .exe in scope T66/T67.
+
+### Decisione
+
+- T42 chiuso (codice + runtime). Commit/push NON eseguito: in attesa di ok utente esplicito (pattern stabilito: l'utente controlla i commit). Working tree accumula `launcher.py`, `tests/test_launcher.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M6a/T43 (endpoint `GET /` -> `templates/index.html`, stato "in attesa del client LoL").
