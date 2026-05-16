@@ -2,6 +2,7 @@
 // Vanilla JS + fetch (ERRATA-002, no framework, no build step).
 // Polls GET /api/draft-state every 2s; "Suggerisci ora" -> POST /api/suggest
 // and renders the Top-3 cards. Loading spinner = T49; error banner = T49b.
+// History list + feedback buttons = T56.
 
 "use strict";
 
@@ -117,6 +118,175 @@ function renderSuggestions(output) {
   }
 }
 
+function formatTimestamp(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toLocaleString("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function feedbackLabel(feedback) {
+  if (feedback === "good") {
+    return "Feedback: utile";
+  }
+  if (feedback === "bad") {
+    return "Feedback: inutile";
+  }
+  return "Feedback: non valutato";
+}
+
+function suggestionSummary(output) {
+  const suggestions = output && output.suggestions ? output.suggestions : [];
+  return suggestions
+    .map((suggestion) => `#${suggestion.rank} ${suggestion.champion}`)
+    .join(" | ");
+}
+
+function applyButtonState(button, active) {
+  button.classList.remove(
+    "border-emerald-500",
+    "border-rose-500",
+    "bg-emerald-600",
+    "bg-rose-600",
+    "text-white",
+    "border-slate-600",
+    "bg-slate-900",
+    "text-slate-300"
+  );
+  if (active && button.dataset.feedback === "good") {
+    button.classList.add("border-emerald-500", "bg-emerald-600", "text-white");
+  } else if (active && button.dataset.feedback === "bad") {
+    button.classList.add("border-rose-500", "bg-rose-600", "text-white");
+  } else {
+    button.classList.add("border-slate-600", "bg-slate-900", "text-slate-300");
+  }
+  button.setAttribute("aria-pressed", active ? "true" : "false");
+}
+
+function setHistoryFeedbackState(item, feedback) {
+  item.dataset.feedback = feedback;
+  const status = item.querySelector("[data-feedback-status]");
+  if (status) {
+    status.textContent = feedbackLabel(feedback);
+    status.classList.toggle("text-emerald-300", feedback === "good");
+    status.classList.toggle("text-rose-300", feedback === "bad");
+    status.classList.toggle("text-slate-400", feedback === "unrated");
+  }
+  for (const button of item.querySelectorAll("[data-feedback]")) {
+    applyButtonState(button, button.dataset.feedback === feedback);
+  }
+}
+
+function feedbackButton(historyId, feedback, label, item) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.historyId = String(historyId);
+  button.dataset.feedback = feedback;
+  button.className =
+    "rounded-md border px-3 py-1 text-xs font-medium transition hover:border-slate-400";
+  button.textContent = label;
+  button.addEventListener("click", () =>
+    submitHistoryFeedback(historyId, feedback, item)
+  );
+  return button;
+}
+
+function historyItem(entry) {
+  const item = document.createElement("li");
+  item.className = "border-t border-slate-700 py-3 first:border-t-0";
+  item.dataset.historyId = String(entry.id);
+
+  const header = document.createElement("div");
+  header.className = "mb-1 flex flex-wrap items-center justify-between gap-2";
+
+  const meta = document.createElement("p");
+  meta.className = "text-xs uppercase tracking-wide text-slate-500";
+  const role = entry.draft_state && entry.draft_state.user_role
+    ? entry.draft_state.user_role
+    : "?";
+  meta.textContent = `${formatTimestamp(entry.timestamp)} | ${role} | ${entry.model_used}`;
+  header.appendChild(meta);
+
+  const status = document.createElement("span");
+  status.dataset.feedbackStatus = "true";
+  status.className = "text-xs font-medium text-slate-400";
+  header.appendChild(status);
+  item.appendChild(header);
+
+  const summary = document.createElement("p");
+  summary.className = "mb-2 text-sm font-medium text-slate-100";
+  summary.textContent = suggestionSummary(entry.output);
+  item.appendChild(summary);
+
+  const actions = document.createElement("div");
+  actions.className = "flex flex-wrap gap-2";
+  actions.appendChild(feedbackButton(entry.id, "good", "Utile", item));
+  actions.appendChild(feedbackButton(entry.id, "bad", "Inutile", item));
+  item.appendChild(actions);
+
+  setHistoryFeedbackState(item, entry.feedback || "unrated");
+  return item;
+}
+
+function renderHistory(entries) {
+  const list = document.getElementById("history-list");
+  if (!list) {
+    return;
+  }
+  list.replaceChildren();
+  if (!entries || entries.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "py-2 text-sm text-slate-500";
+    empty.textContent = "Nessun suggerimento nello storico.";
+    list.appendChild(empty);
+    return;
+  }
+  for (const entry of entries) {
+    list.appendChild(historyItem(entry));
+  }
+}
+
+async function loadHistory() {
+  try {
+    const response = await fetch("/api/history", {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) {
+      showError(await errorMessageFrom(response));
+      return;
+    }
+    renderHistory(await response.json());
+  } catch (err) {
+    console.debug("history request failed", err);
+    showError("Storico non disponibile, riprova.");
+  }
+}
+
+async function submitHistoryFeedback(historyId, feedback, item) {
+  clearError();
+  try {
+    const response = await fetch("/api/history/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ history_id: historyId, feedback }),
+    });
+    if (!response.ok) {
+      showError(await errorMessageFrom(response));
+      return;
+    }
+    setHistoryFeedbackState(item, feedback);
+  } catch (err) {
+    console.debug("history feedback request failed", err);
+    showError("Feedback non salvato, riprova.");
+  }
+}
+
 function setSpinner(visible) {
   const spinner = document.getElementById("loading-spinner");
   if (spinner) {
@@ -173,7 +343,9 @@ async function requestSuggestions() {
       showError(await errorMessageFrom(response));
       return;
     }
-    renderSuggestions(await response.json());
+    const output = await response.json();
+    renderSuggestions(output);
+    await loadHistory();
   } catch (err) {
     // Network down (no connectivity): surface a clear message, app stays usable.
     console.debug("suggest request failed", err);
@@ -186,6 +358,7 @@ async function requestSuggestions() {
 
 function start() {
   pollDraftState();
+  loadHistory();
   window.setInterval(pollDraftState, POLL_INTERVAL_MS);
 
   const button = document.getElementById("suggest-button");

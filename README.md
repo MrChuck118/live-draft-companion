@@ -13,9 +13,9 @@ L'obiettivo del MVP e leggere automaticamente lo stato del champion select trami
 - Modalita operativa: Demo Mode First
 - Provider AI: DeepSeek API diretta (`deepseek-chat` primario, `deepseek-reasoner` fallback). Strategia A/B OpenRouter superata (vedi ERRATA-006, 2026-05-15)
 - Frontend MVP: HTML, Tailwind CDN, Vanilla JS + fetch
-- Stato codice applicativo: M3 e M4 chiusi; M5/T36-T39 chiusi lato codice e validati live su PC casa; M6a COMPLETO; M7a COMPLETO; M6b COMPLETO; M7b IN CORSO con T54-T55 chiusi (`POST /api/history/feedback`, `GET /api/history`). Suite valida: 118/118 PASSED (`pytest tests/`). Nota ambiente: venv ripristinata dopo INC-012.
+- Stato codice applicativo: M3 e M4 chiusi; M5/T36-T39 chiusi lato codice e validati live su PC casa; M6a COMPLETO; M7a COMPLETO; M6b COMPLETO; M7b COMPLETO (`POST /api/history/feedback`, `GET /api/history`, UI storico con feedback). Suite valida: 119/119 PASSED (`pytest tests/`). Nota ambiente: venv ripristinata dopo INC-012.
 - M5/T40 IN SOSPESO: integrazione live validata, ma DoD numerico (>=5 bans, >=10 actions) non riproducibile in custom-vs-bot (INC-010, conferma spec 14.2/INC-001); da rieseguire `scripts/lcu_live_check.py` in un draft reale con ban. Mitigazione gia attiva (sim mode 5/5). Il breakdown procede comunque (scelta utente)
-- Prossimo task tecnico: M7b/T56 (UI storico con feedback); chiusura T40 quando disponibile un draft reale con ban
+- Prossimo task tecnico: M8/T57 (15 scenari di test in `tests/mock_drafts/`); chiusura T40 quando disponibile un draft reale con ban
 - Stato dettagliato e cose in sospeso: vedi `BREAKDOWN_STATUS.md`
 - Open issues (da rivedere): OPEN-001 - parte runtime sbloccabile CHIUSA su DeepSeek (T27/T31/T35 verdi, INC-008 risolto, ERRATA-006); residui: revocare la key OpenRouter esposta (INC-007); T58/T62 ancora aperti perche subordinati a OPEN-002. OPEN-002 dati scenario benchmark 09/05 (test_scenarios.md) NON nel repo, utente li aggiunge da casa, nel frattempo scenari plumbing documentati
 

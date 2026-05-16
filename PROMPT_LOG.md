@@ -5370,3 +5370,46 @@ Esiti: compile exit 0; test mirati **30 passed**; suite completa **118 passed**.
 
 - T55 chiuso. M7b continua.
 - Prossimo task: M7b/T56 (UI sezione storico + bottoni feedback `good|bad`, riuso banner errori T49b).
+
+## PLOG-2026-05-16-062 - M7b/T56 UI storico feedback (impl + 1 test, VERDE) - M7b COMPLETO
+
+- Data: 2026-05-16
+- Scope: T56 (M7b) - sezione storico in `static/app.js`, feedback UI `good|bad`, riuso banner T49b sugli errori.
+- Stato: T56 CHIUSO + DoD VERDE lato wiring automatico. M7b COMPLETO. Commit/push da eseguire subito dopo questa voce.
+
+### Messaggi catalogati
+
+- USER-139: "procedi" (continuare dal prossimo task del breakdown dopo T55).
+- CODEX-327: usa la skill `frontend-design` per la parte UI e conferma il requisito T56 dal breakdown.
+- CODEX-328: implementa storico UI come righe compatte nella sezione esistente: fetch `GET /api/history`, render entries, bottoni `Utile`/`Inutile`, POST `/api/history/feedback`, conferma visiva con `aria-pressed`, refresh storico dopo nuovo suggerimento.
+- CODEX-329: aggiunge test statico T56 per wiring JS e riuso banner; esegue `node --check`, test mirati e suite completa.
+- CODEX-330: aggiorna `BREAKDOWN_STATUS.md`, `README.md` e questa PLOG-062.
+
+### File modificati
+
+- `static/app.js`: aggiunti `loadHistory`, `renderHistory`, `historyItem`, `submitHistoryFeedback`, `setHistoryFeedbackState`; `start()` carica lo storico; `requestSuggestions()` aggiorna lo storico dopo una generazione riuscita.
+- `tests/test_main.py`: +1 test T56 (`test_app_js_history_ui_wiring`) che verifica fetch storico, POST feedback, conferma visiva, `aria-pressed` e fallback banner `showError`.
+- `BREAKDOWN_STATUS.md`: M7b completato, suite 119/119, prossimo M8/T57.
+- `README.md`: stato sintetico aggiornato a M7b COMPLETO e prossimo M8/T57.
+- `PROMPT_LOG.md`: questa PLOG-062.
+
+### Verifiche eseguite
+
+```powershell
+node --check static\app.js
+.\.venv\Scripts\python.exe -m pytest tests\test_main.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+```
+
+Esiti: `node --check` exit 0; test mirati **26 passed**; suite completa **119 passed**.
+
+### DoD T56
+
+- UI storico mostra entries da `GET /api/history`: VERIFICATO lato wiring/statico.
+- Click feedback -> `POST /api/history/feedback` + conferma visiva: VERIFICATO lato wiring/statico (`setHistoryFeedbackState`, `aria-pressed`); endpoint DB gia verificato in T54.
+- Errore POST -> banner come T49b: VERIFICATO lato wiring (`showError(await errorMessageFrom(response))`).
+
+### Decisione
+
+- T56 chiuso. **M7b COMPLETO** (T54-T56).
+- Prossimo task: M8/T57 (15 scenari di test in `tests/mock_drafts/`; OPEN-002 resta rilevante per T58/T62).

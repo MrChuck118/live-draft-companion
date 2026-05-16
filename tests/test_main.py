@@ -420,6 +420,30 @@ def test_app_js_error_banner_wiring(monkeypatch) -> None:
         assert marker in body, f"missing {marker}"
 
 
+def test_app_js_history_ui_wiring(monkeypatch) -> None:
+    """DoD T56: UI fetches history and posts feedback with banner fallback."""
+    _mock_lifecycle(monkeypatch)
+
+    with TestClient(main.app) as client:
+        body = client.get("/static/app.js").text
+
+    for marker in (
+        "/api/history",
+        "/api/history/feedback",
+        "function renderHistory",
+        "function loadHistory",
+        "function submitHistoryFeedback",
+        "setHistoryFeedbackState(item, feedback)",
+        "dataset.feedbackStatus",
+        "aria-pressed",
+        "Utile",
+        "Inutile",
+        "showError(await errorMessageFrom(response))",
+        "Feedback non salvato",
+    ):
+        assert marker in body, f"missing {marker}"
+
+
 # --- T54: POST /api/history/feedback ---
 
 
