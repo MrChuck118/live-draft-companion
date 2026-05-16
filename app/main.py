@@ -14,19 +14,31 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
 from app.data_dragon import check_patch_and_refresh
 from app.db import init_db
-from app.models import DraftState, SuggestionOutput
+from app.lcu_provider import LockfileError
+from app.models import DraftState
 from app.providers import get_draft_state_provider
 from app.suggestion_service import SuggestionError, SuggestionService
+
+# HTTP status per error_code (4xx user input, 5xx external services). T49b.
+_ERROR_STATUS = {
+    "invalid_input": 422,
+    "ai_unavailable": 503,
+    "ai_output_invalid": 502,
+    "draft_unavailable": 503,
+}
+_ERRORS_LOG = Path("logs") / "errors.log"
 
 # Path is relative to the process CWD (repo root in dev / via launcher).
 # PyInstaller sys._MEIPASS resolution is deferred to T66 per breakdown.
@@ -41,6 +53,35 @@ def _configure_logging(level_name: str) -> None:
         level = logging.INFO
     logging.basicConfig(level=level)
     logger.setLevel(level)
+
+    # Dedicated ERROR file log (T49b / spec Â§12). Guard against duplicate
+    # handlers when the lifespan runs multiple times (e.g. in tests).
+    if not any(
+        getattr(handler, "_ldc_errors_file", False) for handler in logger.handlers
+    ):
+        _ERRORS_LOG.parent.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(_ERRORS_LOG, encoding="utf-8")
+        file_handler.setLevel(logging.ERROR)
+        file_handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+        )
+        file_handler._ldc_errors_file = True  # type: ignore[attr-defined]
+        logger.addHandler(file_handler)
+
+
+def _error_response(
+    error_code: str, user_message: str, log_detail: str
+) -> JSONResponse:
+    """Uniform error contract: log ERROR + JSON {error_code, user_message}.
+
+    Never leak stack traces or secrets: log_detail stays server-side.
+    """
+    status = _ERROR_STATUS.get(error_code, 500)
+    logger.error("api error [%s] %s", error_code, log_detail)
+    return JSONResponse(
+        status_code=status,
+        content={"error_code": error_code, "user_message": user_message},
+    )
 
 
 @asynccontextmanager
@@ -86,37 +127,55 @@ async def index(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "index.html")
 
 
+@app.exception_handler(RequestValidationError)
+async def _validation_handler(request: Request, exc: RequestValidationError):
+    """Malformed request body -> uniform error contract (T49b)."""
+    return _error_response(
+        "invalid_input",
+        "Dati di input non validi.",
+        f"validation error on {request.url.path}: {exc.errors()}",
+    )
+
+
 @app.get("/api/draft-state")
-async def draft_state() -> DraftState:
+async def draft_state():
     """Return the current DraftState from the active provider (sim or live).
 
-    Provider is chosen from `.env` (MVP-004). On a provider failure return a
-    controlled 503 (no stack trace); the full error-code/user-message
-    mapping is T49b, not anticipated here.
+    On a provider failure return the uniform error contract (T49b):
+    {"error_code", "user_message"} with a coherent 5xx, no stack trace.
     """
-    provider = get_draft_state_provider(get_settings())
     try:
+        provider = get_draft_state_provider(get_settings())
         return await provider.get_current_state()
+    except LockfileError as exc:
+        return _error_response(
+            "draft_unavailable",
+            "Client League of Legends non rilevato. Avvia il client e riprova.",
+            f"LCU lockfile error: {exc}",
+        )
     except (OSError, ValueError, RuntimeError) as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Stato draft non disponibile: {type(exc).__name__}",
-        ) from exc
+        return _error_response(
+            "draft_unavailable",
+            "Stato del draft non disponibile, riprova.",
+            f"{type(exc).__name__}: {exc}",
+        )
 
 
 @app.post("/api/suggest")
-async def suggest(draft_state: DraftState) -> SuggestionOutput:
+async def suggest(draft_state: DraftState):
     """Thin endpoint: delegate the whole flow to SuggestionService (T45/T45b).
 
-    Body is a DraftState (FastAPI returns 422 on a malformed body). No cache /
-    prompt / validation / history logic here. On a controlled SuggestionError
-    return 503 without a stack trace or API key; full user-message mapping is
-    T49b.
+    Body is a DraftState (malformed -> 422 via the validation handler). On a
+    controlled SuggestionError return the uniform error contract (T49b) with a
+    coherent status, no stack trace or API key.
     """
     try:
         return await SuggestionService().suggest(draft_state)
     except SuggestionError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail="Suggerimenti non disponibili, riprova tra poco.",
-        ) from exc
+        error_code = getattr(exc, "error_code", "ai_unavailable")
+        user_message = (
+            "I suggerimenti AI non sono validi al momento, riprova."
+            if error_code == "ai_output_invalid"
+            else "Servizio AI non disponibile, riprova tra poco."
+        )
+        return _error_response(error_code, user_message, f"SuggestionError: {exc}")

@@ -29,8 +29,14 @@ from app.validators import (
 class SuggestionError(RuntimeError):
     """Controlled failure of the suggestion flow (no stack trace to the user).
 
-    The user-facing error-code/message mapping is T49b.
+    `error_code` drives the HTTP mapping in app.main (T49b):
+    - "ai_unavailable": AI chain exhausted / service unreachable
+    - "ai_output_invalid": AI output invalid/mojibake/illegal after retries
     """
+
+    def __init__(self, message: str, error_code: str = "ai_unavailable") -> None:
+        super().__init__(message)
+        self.error_code = error_code
 
 
 def draft_state_hash(draft_state: DraftState) -> str:
@@ -173,12 +179,16 @@ class SuggestionService:
         try:
             response = self._ai_call(system, user)
         except RuntimeError as exc:
-            raise SuggestionError(f"Servizio AI non disponibile: {exc}") from exc
+            raise SuggestionError(
+                f"Servizio AI non disponibile: {exc}", error_code="ai_unavailable"
+            ) from exc
 
         content = response.choices[0].message.content
         ok, parsed = validator_format(content)
         if not ok:
-            raise SuggestionError(f"Output AI non valido: {parsed}")
+            raise SuggestionError(
+                f"Output AI non valido: {parsed}", error_code="ai_output_invalid"
+            )
         output = parsed  # SuggestionOutput
         model_used = getattr(response, "model", "") or ""
 
@@ -207,4 +217,7 @@ class SuggestionService:
         ]
         for ok, error in results:
             if not ok:
-                raise SuggestionError(f"Validazione output fallita: {error}")
+                raise SuggestionError(
+                    f"Validazione output fallita: {error}",
+                    error_code="ai_output_invalid",
+                )

@@ -37,6 +37,7 @@ logs/*
 !logs/.gitkeep
 *.db
 *.db-journal
+.claude/
 
 # Installer logs
 pip-log.txt

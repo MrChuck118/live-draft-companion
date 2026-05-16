@@ -189,7 +189,10 @@ def test_draft_state_provider_error_returns_503(monkeypatch) -> None:
 
     assert response.status_code == 503
     assert response.headers["content-type"].startswith("application/json")
-    assert "Stato draft non disponibile" in response.json()["detail"]
+    body = response.json()
+    assert body["error_code"] == "draft_unavailable"
+    assert body["user_message"]
+    assert "detail" not in body
 
 
 def test_lifespan_startup_ok(monkeypatch, caplog) -> None:
@@ -316,4 +319,101 @@ def test_suggest_service_error_returns_controlled_503(monkeypatch) -> None:
     text = response.text
     assert "sk-secret-xyz" not in text
     assert "Traceback" not in text
-    assert response.json()["detail"]
+    body = response.json()
+    assert body["error_code"] == "ai_unavailable"
+    assert body["user_message"]
+    assert "sk-secret-xyz" not in body["user_message"]
+
+
+# --- T49b: uniform error contract + UI error banner ---
+
+
+def test_malformed_body_uses_error_contract(monkeypatch) -> None:
+    """DoD T49b: 422 also follows {error_code, user_message}."""
+    _mock_lifecycle(monkeypatch)
+
+    with TestClient(main.app) as client:
+        response = client.post("/api/suggest", json={"patch": "16.10.1"})
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error_code"] == "invalid_input"
+    assert body["user_message"]
+
+
+def test_suggest_output_invalid_maps_to_502(monkeypatch) -> None:
+    """error_code 'ai_output_invalid' -> coherent 502 with contract body."""
+    _mock_lifecycle(monkeypatch)
+
+    class FailingService:
+        async def suggest(self, draft_state):
+            raise SuggestionError("bad output", error_code="ai_output_invalid")
+
+    monkeypatch.setattr(main, "SuggestionService", lambda: FailingService())
+
+    with TestClient(main.app) as client:
+        response = client.post("/api/suggest", json=_VALID_DRAFT_BODY)
+
+    assert response.status_code == 502
+    assert response.json()["error_code"] == "ai_output_invalid"
+
+
+def test_draft_state_lockfile_maps_to_draft_unavailable(monkeypatch) -> None:
+    _mock_lifecycle(monkeypatch)
+    from app.lcu_provider import LockfileError
+
+    class LockfileProvider:
+        async def get_current_state(self):
+            raise LockfileError("lockfile not found")
+
+    monkeypatch.setattr(
+        main, "get_draft_state_provider", lambda settings: LockfileProvider()
+    )
+
+    with TestClient(main.app) as client:
+        response = client.get("/api/draft-state")
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["error_code"] == "draft_unavailable"
+    assert "League of Legends" in body["user_message"]
+
+
+def test_error_is_logged_at_error_level(monkeypatch, caplog) -> None:
+    """DoD T49b: errors are logged at ERROR level."""
+    _mock_lifecycle(monkeypatch)
+
+    class FailingService:
+        async def suggest(self, draft_state):
+            raise SuggestionError("boom")
+
+    monkeypatch.setattr(main, "SuggestionService", lambda: FailingService())
+
+    with caplog.at_level(logging.ERROR, logger="live_draft_companion"):
+        with TestClient(main.app) as client:
+            client.post("/api/suggest", json=_VALID_DRAFT_BODY)
+
+    assert any(
+        record.levelno == logging.ERROR and "api error" in record.getMessage()
+        for record in caplog.records
+    )
+
+
+def test_app_js_error_banner_wiring(monkeypatch) -> None:
+    """DoD T49b: app.js shows the banner on non-2xx and clears it on success."""
+    _mock_lifecycle(monkeypatch)
+
+    with TestClient(main.app) as client:
+        body = client.get("/static/app.js").text
+
+    for marker in (
+        "function showError",
+        "function clearError",
+        "error-banner",
+        "error-message",
+        "scrollIntoView",
+        "user_message",
+        "clearError()",
+        "showError(",
+    ):
+        assert marker in body, f"missing {marker}"

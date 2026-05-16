@@ -124,11 +124,44 @@ function setSpinner(visible) {
   }
 }
 
+function showError(userMessage) {
+  const banner = document.getElementById("error-banner");
+  const message = document.getElementById("error-message");
+  if (message) {
+    message.textContent = userMessage;
+  }
+  if (banner) {
+    banner.classList.remove("hidden");
+    banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+function clearError() {
+  const banner = document.getElementById("error-banner");
+  if (banner) {
+    banner.classList.add("hidden");
+  }
+}
+
+async function errorMessageFrom(response) {
+  // Uniform contract {error_code, user_message} from the backend (T49b).
+  try {
+    const body = await response.json();
+    if (body && body.user_message) {
+      return body.user_message;
+    }
+  } catch (err) {
+    console.debug("error body not JSON", err);
+  }
+  return "Si è verificato un errore, riprova.";
+}
+
 async function requestSuggestions() {
   if (!latestDraftState) {
     // No draft captured yet; UX feedback is T49b.
     return;
   }
+  clearError();
   setSpinner(true);
   try {
     const response = await fetch("/api/suggest", {
@@ -137,14 +170,16 @@ async function requestSuggestions() {
       body: JSON.stringify(latestDraftState),
     });
     if (!response.ok) {
-      // Minimal non-crash handling; full error banner is T49b.
+      showError(await errorMessageFrom(response));
       return;
     }
     renderSuggestions(await response.json());
   } catch (err) {
-    // Network down; T49b owns the user-facing error UX.
+    // Network down (no connectivity): surface a clear message, app stays usable.
     console.debug("suggest request failed", err);
+    showError("Rete non disponibile, riprova.");
   } finally {
+    // Button is never disabled, so it stays clickable; spinner always hidden.
     setSpinner(false);
   }
 }

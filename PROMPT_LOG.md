@@ -5143,3 +5143,52 @@ Esiti: suite **105 passed** (103 + 2 T49); smoke reale `GET /` HTTP 200 con `#di
 
 - T49 chiuso (codice + verifica automatica). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `templates/index.html`, `static/app.js`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M6b/T49b (error banner + stato errori UI/backend, Must non tagliabile: copre MVP-013, RF-013/RF-022/RF-023/RF-024, spec Â§12).
+
+## PLOG-2026-05-16-057 - M6b/T49b error contract + UI error banner (impl + 7 test, runtime VERDE) - M6b COMPLETO
+
+- Data: 2026-05-16
+- Scope: T49b (M6b, Must non tagliabile) - contratto errori backend uniforme + banner UI + log ERROR. Chiude M6b. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T49b CHIUSO + DoD VERDE (banner visivo = check manuale browser). Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-134: "ok commit/push poi continua con il piano".
+- CODEX-307: commit/push T49 (48ed05b su main); piano T49b esposto con tassonomia error_code da confermare.
+- USER-135: "ok procedi" (conferma piano + tassonomia).
+- CODEX-308: implementazione T49b + 7 test (2 aggiornati al nuovo contratto + 5 nuovi) + smoke runtime reale + questa PLOG-057 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `app/suggestion_service.py`: `SuggestionError.__init__(message, error_code="ai_unavailable")` con attributo `error_code`; valorizzato ai raise (chain/AI -> `ai_unavailable`; format/gate -> `ai_output_invalid`).
+- `app/main.py`: import `RequestValidationError`, `JSONResponse`, `LockfileError`, `Path`; rimosso `HTTPException`/`SuggestionOutput` inutilizzati. `_ERROR_STATUS` (invalid_input 422, ai_unavailable 503, ai_output_invalid 502, draft_unavailable 503). `_configure_logging`: FileHandler ERROR su `logs/errors.log` con guardia anti-duplicato (`_ldc_errors_file`). `_error_response(error_code,user_message,log_detail)`: logga ERROR server-side + ritorna JSON `{error_code,user_message}` (no stack trace/secret nel body). Exception handler `RequestValidationError` -> contratto `invalid_input` 422. `/api/draft-state`: `LockfileError`->`draft_unavailable` (msg "Client League of Legends non rilevato..."), `OSError/ValueError/RuntimeError`->`draft_unavailable`. `/api/suggest`: `SuggestionError` -> mapping da `error_code` (status coerente, user_message IT). Annotazioni di ritorno rimosse dove si ritorna JSONResponse.
+- `static/app.js`: `showError(msg)` (mostra `#error-banner`/`#error-message`, `scrollIntoView`), `clearError()`, `errorMessageFrom(response)` (legge `user_message` dal contratto). `requestSuggestions()`: `clearError()` a inizio, su non-2xx `showError(user_message)`, su errore rete `showError("Rete non disponibile, riprova.")`, bottone mai disabilitato (resta cliccabile), spinner off in `finally`. Decisione: `pollDraftState()` NON mostra banner (polling 2s; spec Â§12 mappa "client LoL chiuso" allo stato d'attesa, non a un banner che lampeggerebbe) - banner riservato all'azione esplicita Suggerisci.
+- `tests/test_main.py`: 2 test aggiornati al nuovo contratto (draft-state error -> `error_code=draft_unavailable`; suggest error -> `error_code=ai_unavailable`, no key in user_message) + 5 nuovi (malformed -> invalid_input 422; ai_output_invalid -> 502; LockfileError -> draft_unavailable 503 con "League of Legends"; errore loggato a ERROR via caplog; app.js error-banner wiring showError/clearError/scrollIntoView/user_message).
+- `PROMPT_LOG.md`: questa PLOG-057. `BREAKDOWN_STATUS.md`/`README.md`: T49b chiuso, M6b COMPLETO, suite 110/110, prossimo M7b/T54.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati. Nessun nuovo pattern di errore reale emerso durante i test (il DoD chiede entry solo "eventuali"); niente entry forzata.
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\main.py app\suggestion_service.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+# smoke reale: DEEPSEEK_API_KEY= DRAFT_PROVIDER_MODE=sim uvicorn --port 8105
+#   POST valido (no key) -> 503 {error_code:ai_unavailable,user_message}
+#   POST malformato -> 422 {error_code:invalid_input,user_message}
+#   logs/errors.log: 2 righe ERROR (dettaglio server-side, nessuna key/stack trace nel body)
+```
+
+Esiti: compile exit 0; suite **110 passed** (105 + 7 net, 2 aggiornati); smoke reale conforme; `logs/errors.log` (gitignored, `git check-ignore` OK) riceve righe ERROR.
+
+### DoD T49b
+
+- Ogni eccezione interna -> HTTP code coerente (4xx input / 5xx servizi) + body `{error_code,user_message}`: VERIFICATO (test + smoke: 422 invalid_input, 503 ai_unavailable/draft_unavailable, 502 ai_output_invalid).
+- UI non crasha, messaggio comprensibile IT, banner: VERIFICATO (wiring test; visivo = check manuale browser).
+- Bottone "Suggerisci" mai disabilitato (sempre cliccabile): VERIFICATO (codice: nessun disable; `clearError` a inizio, `setSpinner(false)` in finally).
+- Errore loggato ERROR + entry in `logs/errors.log`: VERIFICATO (caplog test + smoke reale file).
+- Stato globale recuperabile (polling continua): VERIFICATO (polling indipendente, nessuna eccezione propagata; banner solo su azione Suggerisci).
+- INCIDENTS aggiornato con nuovi pattern: nessun nuovo pattern reale emerso -> nessuna entry (coerente col DoD "eventuali").
+
+### Decisione
+
+- T49b chiuso (codice + verifica). **M6b COMPLETO** (T45, T48, T49, T49b). Commit/push NON eseguito: in attesa di ok utente esplicito. Working tree accumula `app/suggestion_service.py`, `app/main.py`, `static/app.js`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M7b/T54 (endpoint `POST /api/history/feedback` -> aggiorna record via HistoryRepository, `feedback: good|bad`).
