@@ -16,11 +16,17 @@ import logging
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
 from app.data_dragon import check_patch_and_refresh
 from app.db import init_db
+
+# Path is relative to the process CWD (repo root in dev / via launcher).
+# PyInstaller sys._MEIPASS resolution is deferred to T66 per breakdown.
+templates = Jinja2Templates(directory="templates")
 
 logger = logging.getLogger("live_draft_companion")
 
@@ -60,3 +66,13 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request) -> HTMLResponse:
+    """Serve the base UI shell (initial state: waiting for the LoL client).
+
+    Minimal page only (T43); full Tailwind UI + sections is T46, the polling
+    JS is T47.
+    """
+    return templates.TemplateResponse(request, "index.html")

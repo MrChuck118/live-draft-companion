@@ -38,6 +38,26 @@ def test_app_metadata() -> None:
     assert main.app.title == "Live Draft Companion"
 
 
+def test_index_serves_base_html(monkeypatch) -> None:
+    """GET / returns the base UI shell with the initial waiting state (DoD T43)."""
+
+    async def fake_init_db() -> None:
+        return None
+
+    async def fake_check_patch_and_refresh() -> str:
+        return "16.10.1"
+
+    monkeypatch.setattr(main, "init_db", fake_init_db)
+    monkeypatch.setattr(main, "check_patch_and_refresh", fake_check_patch_and_refresh)
+
+    with TestClient(main.app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "In attesa del client LoL" in response.text
+
+
 def test_lifespan_startup_ok(monkeypatch, caplog) -> None:
     """Startup runs init_db + Data Dragon refresh and logs 'App ready' (DoD T41)."""
     calls: list[str] = []

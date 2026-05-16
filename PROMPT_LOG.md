@@ -4649,3 +4649,44 @@ Esiti: compile exit 0; suite **79 passed** (73 + 6 T42); smoke reale: CASE A por
 
 - T42 chiuso (codice + runtime). Commit/push NON eseguito: in attesa di ok utente esplicito (pattern stabilito: l'utente controlla i commit). Working tree accumula `launcher.py`, `tests/test_launcher.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
 - Prossimo task: M6a/T43 (endpoint `GET /` -> `templates/index.html`, stato "in attesa del client LoL").
+
+## PLOG-2026-05-16-045 - M6a/T43 endpoint GET / serve index.html base (impl + 1 test, runtime VERDE)
+
+- Data: 2026-05-16
+- Scope: T43 (M6a) - route `GET /` + `templates/index.html` minimale. T40 resta IN SOSPESO (scelta utente), si procede.
+- Stato: T43 CHIUSO lato codice + DoD runtime VERDE. Commit/push IN ATTESA di ok utente.
+
+### Messaggi catalogati
+
+- USER-108: "ok commit/push poi dopo procedi con pianificazione".
+- CODEX-281: commit/push T42 (387b9f9 su main); piano T43 esposto (index.html minimale + route Jinja2 + 1 test + verifica + docs); in attesa approvazione.
+- USER-109: "procedi".
+- CODEX-282: implementazione T43 + 1 test + smoke runtime reale + questa PLOG-045 + BREAKDOWN_STATUS/README.
+
+### File creati/modificati
+
+- `templates/index.html` (nuovo): pagina HTML minimale valida (lang it, UTF-8), `<h1>` + `<p id="status">In attesa del client LoL</p>`. NIENTE Tailwind/sezioni draft/suggerimenti/storico/error-banner (scope T46) ne JS (scope T47): T43 e volutamente minimale come da breakdown ("anche minimale").
+- `app/main.py`: import `Request`/`HTMLResponse`/`Jinja2Templates`; `templates = Jinja2Templates(directory="templates")` (path relativo a CWD repo-root in dev/launcher; risoluzione PyInstaller `sys._MEIPASS` RINVIATA a T66 come da breakdown, commento esplicito); route `@app.get("/", response_class=HTMLResponse)` -> `TemplateResponse(request, "index.html")`. Nessun mount `static/` (scope T47).
+- `tests/test_main.py`: +1 test `test_index_serves_base_html` (TestClient GET / -> 200, content-type text/html, body contiene "In attesa del client LoL"; init_db/check_patch mockati per non toccare rete/DB).
+- `PROMPT_LOG.md`: questa PLOG-045. `BREAKDOWN_STATUS.md`/`README.md`: T43 chiuso, suite 80/80, prossimo T44.
+- `INCIDENTS.md`/`SPEC_ERRATA.md`: NON modificati (nessun incidente reale).
+
+### Verifiche eseguite
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app\main.py -q
+.\.venv\Scripts\python.exe -m pytest tests/ -q
+# smoke reale: uvicorn app.main:app --port 8055 ; GET /
+```
+
+Esiti: compile exit 0; suite **80 passed** (79 + 1 T43); smoke reale `GET /` -> HTTP 200, `text/html; charset=utf-8`, body contiene "In attesa del client LoL".
+
+### DoD T43
+
+- Route `GET /` restituisce `templates/index.html` con stato iniziale "in attesa del client LoL": VERIFICATO (test + smoke reale).
+- Browser su `localhost:<porta>` mostra una pagina (anche minimale): VERIFICATO (HTTP 200 HTML, pagina renderizzabile).
+
+### Decisione
+
+- T43 chiuso (codice + runtime). Commit/push NON eseguito: in attesa di ok utente esplicito (pattern stabilito). Working tree accumula `templates/index.html`, `app/main.py`, `tests/test_main.py`, `PROMPT_LOG.md`, `BREAKDOWN_STATUS.md`, `README.md`.
+- Prossimo task: M6a/T44 (endpoint `GET /api/draft-state` -> stato del DraftStateProvider attivo, JSON).
